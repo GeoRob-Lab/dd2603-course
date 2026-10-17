@@ -7,7 +7,7 @@
 | Module | Contents |
 |---|---|
 | `assignment2utils.data` | `load_rby1_end()`, `load_screw()`, `load_pouring_paths()` |
-| `assignment2utils.manifolds` | the solution of Programming Assignment 1: `Sphere`, `UnitQuaternions`, `PoseManifold`, `matrix_angle`; `projected_normal` |
+| `assignment2utils.manifolds` | Some already implemented manifolds: `Sphere`, `UnitQuaternions`, `PoseManifold`, `matrix_angle`; `projected_normal` |
 | `assignment2utils.rotations` | conversions between rotation matrices, quaternions `(w, x, y, z)`, Euler angles and rotation vectors; pose helpers |
 | `assignment2utils.plotting` | 3D frames, plots on the sphere, convergence plots, paths and metric ellipses |
 | `assignment2utils.metrics` | PyTorch helpers for Parts 3–5: SPD matrix functions, geodesics of a metric field, evaluation |
