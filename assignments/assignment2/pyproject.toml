@@ -1,16 +1,19 @@
 [project]
 name = "assignment2utils"
 version = "1.0.0"
-description = "Helpers, data and public checks for Programming Assignment 2 (statistics on manifolds) of the geometric robot learning course"
+description = "Helpers, data and public checks for Programming Assignment 2 (statistics on manifolds and learned metrics) of the geometric robot learning course"
 requires-python = ">=3.10"
-# Everything below is preinstalled on Google Colab except geomstats. Versions are
-# deliberately not pinned from above, so that pip never downgrades Colab's NumPy.
+# Everything below is preinstalled on Google Colab except geomstats and geoopt. Versions are
+# deliberately not pinned from above, so that pip never downgrades Colab's NumPy or PyTorch.
 dependencies = [
     "numpy>=1.24",
     "scipy>=1.10",
     "matplotlib>=3.7",
     "pandas>=1.5",
+    "torch>=2.0",
     "geomstats==2.8.0",
+    "geoopt>=0.5.1",
+    "tqdm>=4.60",
 ]
 
 [build-system]

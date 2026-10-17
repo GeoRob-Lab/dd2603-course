@@ -15,6 +15,15 @@ and returns the axes, so you can add your own overlays.
     plot_convergence(histories, key)   semilog plot of an optimisation history
     plot_corr_matrix(M, names)         annotated correlation matrix
 
+Paths and metric fields (Parts 3 to 5; positions in metres)
+    path_axes(views)                   one panel per view: "xy" (from above), "xz", "yz" (from the side)
+    plot_path(axes, X, **kw)           a path (T, 3) in every panel of path_axes
+    plot_paths_3d(ax, X, **kw)         a path (T, 3) in a 3D axes
+    plot_metric(ax, metric, level)     a metric field on a slice: shading by its size and unit-ball ellipses
+    plot_metric_ellipses(ax, metric)   only the ellipses
+    plot_anchors(axes, centres, P)     the anchor matrices of Part 4 as ellipses at their centres
+    plot_curves(curves, ax)            {label: values} as lines, e.g. losses against the iteration
+
 Colours: METHOD_COLORS gives one fixed colour per interpolation method / estimator,
 used in every part. Red / green / blue are reserved for the x / y / z tool axes.
 """
@@ -217,6 +226,164 @@ def plot_corr_matrix(M, names, ax=None, title=None, vmin=-1, vmax=1, fmt="{:.2f}
                     color="w" if abs(M[i, j]) > 0.6 else "k")
     ax.figure.colorbar(im, ax=ax, shrink=0.8)
     ax.grid(False)
+    if title:
+        ax.set_title(title, fontsize=10)
+    return ax
+
+
+# ======================================================================= paths and metric fields
+_VIEW_AXES = {"xy": (0, 1), "xz": (0, 2), "yz": (1, 2)}
+_VIEW_NAMES = {"xy": "from above (x-y)", "xz": "from the side (x-z)", "yz": "from the front (y-z)"}
+
+
+def path_axes(views=("xy", "yz"), figsize=None, title=None):
+    """A row of 2D panels, one per view ("xy", "xz" or "yz"), with labels in metres and equal aspect."""
+    figsize = figsize or (5.5 * len(views), 4.2)
+    fig, axes = plt.subplots(1, len(views), figsize=figsize, squeeze=False)
+    axes = axes[0]
+    for ax, v in zip(axes, views):
+        i, j = _VIEW_AXES[v]
+        ax.set_xlabel("xyz"[i] + " [m]")
+        ax.set_ylabel("xyz"[j] + " [m]")
+        ax.set_aspect("equal", adjustable="datalim")
+        ax.set_title(_VIEW_NAMES[v], fontsize=9)
+        ax.grid(alpha=0.3)
+        ax.view = v
+    if title:
+        fig.suptitle(title, fontsize=10)
+    return axes
+
+
+def plot_path(axes, X, label=None, **kw):
+    """Draw the path X (T, 3) in every panel created by path_axes. Keyword arguments go to ax.plot."""
+    X = np.asarray(X)
+    for k, ax in enumerate(np.atleast_1d(axes)):
+        i, j = _VIEW_AXES[getattr(ax, "view", "xy")]
+        ax.plot(X[:, i], X[:, j], label=label if k == 0 else None, **kw)
+    return axes
+
+
+def plot_paths_3d(ax, X, label=None, **kw):
+    """Draw the path X (T, 3) in a 3D axes (ax = fig.add_subplot(projection="3d"))."""
+    X = np.asarray(X)
+    ax.plot(X[:, 0], X[:, 1], X[:, 2], label=label, **kw)
+    return ax
+
+
+def _slice_points(view, level, xlim, ylim, n):
+    i, j = _VIEW_AXES[view]
+    k = 3 - i - j
+    gx, gy = np.meshgrid(np.linspace(*xlim, n), np.linspace(*ylim, n))
+    pts = np.zeros((gx.size, 3))
+    pts[:, i], pts[:, j], pts[:, k] = gx.ravel(), gy.ravel(), level if level is not None else 0.0
+    return pts, gx, gy, (i, j)
+
+
+def _eval_metric(metric, pts):
+    import torch
+    with torch.no_grad():
+        return metric(torch.as_tensor(pts, dtype=torch.float64)).numpy()
+
+
+def plot_metric_ellipses(ax, metric, view="xy", level=None, xlim=None, ylim=None, n=9,
+                         size=None, normalize=True, color="0.25", **kw):
+    """
+    Draw the unit ball {v : v^T M(x) v <= 1} of a metric field at an n x n grid of points on a
+    slice of the workspace, projected onto the panel. A large ellipse means cheap motion, a long
+    axis a cheap direction. The slice is the plane of `view` with the third coordinate = `level`.
+
+    xlim, ylim: the grid range (default: the current limits of ax). size: the radius drawn for
+    the median size of the field (default: 0.35 grid cells). normalize: rescale the whole field so
+    that its median ellipse has that size, which removes a global scale factor.
+    """
+    from matplotlib.patches import Ellipse
+
+    view = getattr(ax, "view", view)
+    xlim, ylim = xlim or ax.get_xlim(), ylim or ax.get_ylim()
+    pts, _, _, (i, j) = _slice_points(view, level, xlim, ylim, n)
+    M = _eval_metric(metric, pts)
+    C = np.linalg.inv(M)[:, [i, j]][:, :, [i, j]]          # shadow of the unit ball on the plane
+    lam, U = np.linalg.eigh(C)
+    lam = np.maximum(lam, 1e-300)
+    if normalize:
+        lam = lam / np.median(np.sqrt(lam.prod(1)))
+    size = size or 0.35 * min(np.diff(xlim)[0], np.diff(ylim)[0]) / (n - 1)
+    lw = kw.pop("lw", 0.8)
+    for p, l, u in zip(pts, lam, U):
+        angle = np.degrees(np.arctan2(u[1, 1], u[0, 1]))
+        r1, r2 = size * np.sqrt(l[1]), size * np.sqrt(l[0])
+        r1, r2 = min(r1, 2 * size), min(r2, 2 * size)        # keep very cheap directions readable
+        ax.add_patch(Ellipse((p[i], p[j]), 2 * r1, 2 * r2, angle=angle, fill=False, color=color, lw=lw, **kw))
+    ax.set_aspect("equal", adjustable="box")
+    ax.set_xlim(xlim)
+    ax.set_ylim(ylim)
+    return ax
+
+
+def plot_metric(ax, metric, view="xy", level=None, xlim=None, ylim=None, n=11, n_shade=60,
+                cmap="YlOrRd", vmin=None, vmax=None, colorbar=True, **kw):
+    """
+    A metric field on a slice of the workspace (see plot_metric_ellipses): the background is shaded
+    by the size of the metric, log10 (det M)^(1/3) (the log of the geometric mean of the eigenvalues;
+    dark = expensive), on a fine n_shade x n_shade grid, and the unit-ball ellipses are drawn on a
+    coarse n x n grid on top. vmin, vmax fix the colour range, to compare several panels.
+    """
+    view = getattr(ax, "view", view)
+    xlim, ylim = xlim or ax.get_xlim(), ylim or ax.get_ylim()
+    pts, gx, gy, _ = _slice_points(view, level, xlim, ylim, n_shade)
+    M = _eval_metric(metric, pts)
+    size = np.linalg.slogdet(M)[1] / 3 / np.log(10)
+    im = ax.pcolormesh(gx, gy, size.reshape(gx.shape), cmap=cmap, shading="gouraud", vmin=vmin, vmax=vmax,
+                       alpha=0.8, zorder=0)
+    if colorbar:
+        ax.figure.colorbar(im, ax=ax, shrink=0.8, label="log10 size of M")
+    plot_metric_ellipses(ax, metric, view=view, level=level, xlim=xlim, ylim=ylim, n=n, **kw)
+    return ax
+
+
+def plot_anchors(axes, centres, P, size=0.03, color="k", lw=1.5):
+    """
+    The anchors of an anchor field: at each centre c_k (K, 3), the unit ball {v : v^T P_k v <= 1}
+    of its matrix P_k (K, 3, 3), projected onto every panel of path_axes. All anchors are rescaled
+    together so that the median one has radius `size` (in metres); radii are clipped to
+    [size / 20, 5 size], so that extreme anchors stay visible. Non-finite anchors are skipped.
+    """
+    from matplotlib.patches import Ellipse
+
+    centres, P = np.asarray(centres), np.asarray(P, dtype=float)
+    ok = np.isfinite(P).all((1, 2))
+    lam, U = np.linalg.eigh(np.where(ok[:, None, None], P, np.eye(3)))
+    lam = np.maximum(lam, 1e-300)
+    log_r = -0.5 * np.log(lam)                                   # log semi-axes of the unit ball of P_k
+    log_scale = np.log(size) - np.median(log_r[ok].mean(1))
+    radii = np.exp(np.clip(log_r + log_scale, np.log(size / 20), np.log(5 * size)))
+    scale = 1.0
+    for ax in np.atleast_1d(axes):
+        i, j = _VIEW_AXES[getattr(ax, "view", "xy")]
+        for c, r, u, good in zip(centres, radii, U, ok):
+            if not good:
+                continue
+            B = (u * (scale * r)) [[i, j]]                       # projected axes of the ellipsoid
+            C = B @ B.T
+            l2, u2 = np.linalg.eigh(C)
+            r2 = np.clip(np.sqrt(np.maximum(l2, 0)), size / 20, 5 * size)
+            angle = np.degrees(np.arctan2(u2[1, 1], u2[0, 1]))
+            ax.add_patch(Ellipse((c[i], c[j]), 2 * r2[1], 2 * r2[0], angle=angle, fill=False, color=color, lw=lw))
+            ax.plot(c[i], c[j], "o", color=color, ms=3)
+    return axes
+
+
+def plot_curves(curves, ax=None, logy=True, xlabel="iteration", ylabel=None, title=None):
+    """curves: {label: 1D array}. One line per entry (log scale on y by default)."""
+    ax = ax if ax is not None else plt.figure(figsize=(6, 3.5)).gca()
+    for i, (label, y) in enumerate(curves.items()):
+        y = np.asarray(y, float)
+        (ax.semilogy if logy else ax.plot)(np.arange(len(y)), y, color=f"C{i % 10}", label=str(label), lw=1.2)
+    ax.set_xlabel(xlabel)
+    if ylabel:
+        ax.set_ylabel(ylabel)
+    ax.grid(alpha=0.3)
+    ax.legend(fontsize=7)
     if title:
         ax.set_title(title, fontsize=10)
     return ax

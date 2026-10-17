@@ -1,17 +1,18 @@
 """
-assignment2utils: provided code for Programming Assignment 2 (statistics on manifolds).
+assignment2utils: provided code for Programming Assignment 2 (statistics on manifolds and learned metrics).
 
 Submodules
 ----------
 data       loaders for the datasets shipped with the package
 rotations  conversions between rotation matrices, quaternions (w, x, y, z),
            Euler angles and rotation vectors; SE(3) helpers
-plotting   matplotlib helpers (frames in 3D, curves on S^2, convergence and correlation plots)
-checks     public checks: assignment2utils.checks.part5(...), part6(...)
+plotting   matplotlib helpers (frames in 3D, curves on S^2, convergence plots, paths and metric ellipses)
+metrics    PyTorch helpers for Parts 3 to 5: SPD matrix functions, geodesics, evaluation
+checks     public checks: assignment2utils.checks.part1(...), ..., part5(...)
 oracle     geomstats, imported with the right backend (only for ORACLE cells and checks)
 
-geomstats is never imported by `import assignment1utils`; it is loaded lazily by
-`assignment2utils.oracle` and by the checks.
+geomstats and PyTorch are not imported by `import assignment2utils`; they are loaded by
+`assignment2utils.oracle`, `assignment2utils.metrics` and the checks.
 """
 import sys
 
@@ -30,9 +31,10 @@ def print_versions():
     print(f"numpy      {numpy.__version__}")
     print(f"scipy      {scipy.__version__}")
     print(f"matplotlib {matplotlib.__version__}")
-    try:
-        from importlib.metadata import version
-        print(f"geomstats  {version('geomstats')}")
-    except Exception:
-        print("geomstats  not installed")
+    from importlib.metadata import version
+    for pkg in ["torch", "geoopt", "geomstats"]:
+        try:
+            print(f"{pkg:10s} {version(pkg)}")
+        except Exception:
+            print(f"{pkg:10s} not installed")
     print(f"assignment2utils  {__version__}")
