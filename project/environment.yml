@@ -1,0 +1,13 @@
+# Conda environment for the DD2603 RB-Y1 project.
+# Create it inside the repository with:
+#   conda env create -p ./miniconda_env -f environment.yml
+# Conda only provides Python and pip; every package comes from requirements.txt.
+channels:
+  - conda-forge
+  - nodefaults
+dependencies:
+  - python=3.12
+  - pip
+  - pip:
+      - -r requirements.txt
+      - -e .

@@ -1,0 +1,54 @@
+# Safety settings, applied by SafetyManager (src/rbylearn/safety.py) to every ControlRobot controller.
+# They live here, not in the controller code, so a controller cannot loosen them.
+
+# What to do when a command breaks a limit below: "stop" ends the run and the robot holds its
+# position; "clip" corrects the command to the nearest allowed one and continues.
+on_violation: stop
+
+# Speed limits. The robot itself enforces these: joint commands are sent with
+# max_joint_velocity, Cartesian commands with max_linear/angular_velocity.
+max_joint_velocity_deg_s: 60.0
+# Joints (rby1-sdk names) with their own velocity limit. The wrists are rated faster (rby1-sdk:
+# joints 4-5 at 360 deg/s, joint 6 at 120 deg/s) and spin fast for a moment when the hand passes
+# near a wrist singularity (joint 5 near 0: joints 4 and 6 aligned), e.g. in insertion demos 0 and 8.
+joint_velocity_overrides_deg_s:
+  right_arm_4: 120.0
+  right_arm_5: 120.0
+  right_arm_6: 120.0
+  left_arm_4: 120.0
+  left_arm_5: 120.0
+  left_arm_6: 120.0
+max_linear_velocity: 0.3 # m/s, end-effector
+max_angular_velocity_deg_s: 60.0  # end-effector
+
+# Largest jump between the current state and a single command.
+max_joint_step_deg: 10.0
+max_ee_step: 0.05 # m
+max_ee_rotation_step_deg: 15.0
+
+# Commanded joint positions stay this far inside rby1-sdk's joint limits.
+joint_limit_margin_deg: 2.0
+
+# Box (m, base frame) both end-effectors must stay in, for commands and measured state.
+workspace:
+  x: [-0.2, 1.0]
+  y: [-0.9, 0.9]
+  z: [0.4, 1.8]
+# What a command that would take a hand out of the box does:
+#   slide: the hand keeps only the part of its motion along the box (e.g. at the bottom face it still
+#          moves sideways, not down); a joint command that leaves the box holds the arm for that step.
+#          The run goes on, with a warning the first time.
+#   stop:  the run stops (or with on_violation: clip, the target is clipped to the box).
+on_workspace_exit: slide
+
+# Measured joint speeds: the run stops if, within the last velocity_window_s seconds, more than
+# velocity_window_ratio of the steps had a joint above 1.5 x its velocity limit, or at once if a
+# joint goes above 3 x its limit (a single short overshoot, e.g. near a wrist singularity, doesn't stop it).
+velocity_window_s: 1.0
+velocity_window_ratio: 0.5
+
+# Timing of each streamed command. minimum_time: the robot takes at least this long to reach
+# a command (smooths the motion; one control period is a good value). hold_time: if no new
+# command arrives within this time, the robot stops following the stream and holds position.
+command_minimum_time: 0.01
+command_hold_time: 0.5

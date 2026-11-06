@@ -1,0 +1,32 @@
+<!--
+  The table in front of the robot with three RealSense D435 cameras on its far side.
+  Use: rby1-sim --scene scenes/table.xml
+  Written by scripts/make_scenes.py: change it there.
+-->
+<mujoco model="table">
+  <asset>
+    <texture name="floor" type="2d" file="textures/lab_floor.png"/>
+    <material name="floor" texture="floor" texrepeat="1 1"/>
+    <material name="table_top" specular="0" shininess="0" reflectance="0"/>
+  </asset>
+  <worldbody>
+    <light name="ceiling" pos="0.6 0 2.6" dir="0 0 -1" diffuse="0.4 0.4 0.4" specular="0.05 0.05 0.05" castshadow="false"/>
+    <light name="front" pos="1.8 0 1.8" dir="-1 0 -0.6" diffuse="0.2 0.2 0.2" specular="0 0 0" castshadow="false"/>
+    <body name="table">
+      <geom name="table_top" type="box" pos="0.6500 0.0000 0.7050" size="0.4000 0.7000 0.0150" rgba="0.04 0.04 0.045 1" contype="3" conaffinity="3" friction="0.6 0.01 0.001" material="table_top"/>
+      <geom name="table_leg_00" type="box" pos="0.2900 -0.6600 0.3450" size="0.0200 0.0200 0.3450" rgba="0.25 0.25 0.27 1" contype="0" conaffinity="0"/>
+      <geom name="table_leg_01" type="box" pos="0.2900 0.6600 0.3450" size="0.0200 0.0200 0.3450" rgba="0.25 0.25 0.27 1" contype="0" conaffinity="0"/>
+      <geom name="table_leg_10" type="box" pos="1.0100 -0.6600 0.3450" size="0.0200 0.0200 0.3450" rgba="0.25 0.25 0.27 1" contype="0" conaffinity="0"/>
+      <geom name="table_leg_11" type="box" pos="1.0100 0.6600 0.3450" size="0.0200 0.0200 0.3450" rgba="0.25 0.25 0.27 1" contype="0" conaffinity="0"/>
+      <camera name="camera_centre" pos="1.1000 0.0000 1.2500" xyaxes="0.073331 0.997308 -0.000000 -0.434473 0.031947 0.900118" fovy="42.5" resolution="640 480"/>
+      <geom name="camera_centre_body" type="box" pos="1.1130 -0.0010 1.2563" euler="0 0 175.79" size="0.0125 0.045 0.0125" rgba="0.55 0.56 0.58 1" contype="0" conaffinity="0"/>
+      <geom name="camera_centre_post" type="cylinder" fromto="1.0931 0.0005 0.7200 1.0931 0.0005 1.2438" size="0.008" rgba="0.15 0.15 0.15 1" contype="0" conaffinity="0"/>
+      <camera name="camera_left" pos="1.0000 0.5500 1.3000" xyaxes="-0.652940 0.757410 0.000000 -0.336678 -0.290240 0.895772" fovy="42.5" resolution="640 480"/>
+      <geom name="camera_left_body" type="box" pos="1.0098 0.5585 1.3064" euler="0 0 -139.24" size="0.0125 0.045 0.0125" rgba="0.55 0.56 0.58 1" contype="0" conaffinity="0"/>
+      <geom name="camera_left_post" type="cylinder" fromto="0.9947 0.5454 0.7200 0.9947 0.5454 1.2939" size="0.008" rgba="0.15 0.15 0.15 1" contype="0" conaffinity="0"/>
+      <camera name="camera_right" pos="1.0000 -0.5500 1.3000" xyaxes="0.718988 0.695022 -0.000000 -0.288029 0.297961 0.910087" fovy="42.5" resolution="640 480"/>
+      <geom name="camera_right_body" type="box" pos="1.0092 -0.5595 1.3060" euler="0 0 134.03" size="0.0125 0.045 0.0125" rgba="0.55 0.56 0.58 1" contype="0" conaffinity="0"/>
+      <geom name="camera_right_post" type="cylinder" fromto="0.9953 -0.5451 0.7200 0.9953 -0.5451 1.2935" size="0.008" rgba="0.15 0.15 0.15 1" contype="0" conaffinity="0"/>
+    </body>
+  </worldbody>
+</mujoco>

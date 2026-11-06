@@ -1,0 +1,44 @@
+# Robot interface (the same for rby1-sim, Rainbow Robotics' docker simulator and the real robot)
+rby1-sdk==0.10.0
+
+# Simulation
+mujoco==3.15.0
+
+# rby1-sim's gRPC server, generated from rby1-sdk's protocol files on first run
+grpcio==1.84.0
+grpcio-tools==1.84.0
+protobuf==7.36.2
+
+# Numerics
+numpy==2.5.3
+
+# Configuration files
+pyyaml==6.0.3
+
+# Learning (neural-network policies)
+torch==2.14.1
+
+# Demonstration datasets (HDF5)
+h5py==3.16.0
+
+# Plots (training curves, trajectories)
+matplotlib==3.11.2
+
+# Vision: point clouds from the cameras, mesh fitting (Open3D), PointNet++ encoders
+open3d==0.20.0
+scipy==1.18.1
+
+# The grippers and cameras (ZMQ, msgpack), as the real robot's servers
+pyzmq==27.2.0
+msgpack==1.2.4
+
+# Camera videos in the datasets and logs (H.264)
+av==17.1.0
+
+# HTML reports of datasets and logs (visualization/)
+plotly==7.1.0
+pillow==13.0.0
+
+# Vision: the camera images' encoder (ResNet18, pretrained on ImageNet; timm downloads its weights)
+torchvision==0.29.2
+timm==1.0.31

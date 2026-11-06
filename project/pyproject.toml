@@ -1,0 +1,20 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "rbylearn"
+version = "0.1.0"
+description = "RB-Y1 simulator that serves the robot API of rby1-sdk (DD2603 course project)"
+requires-python = ">=3.11"
+dependencies = []  # pinned in requirements.txt
+
+[project.scripts]
+rby1-sim = "rbylearn.sim.launcher:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+# Lets editors (VS Code/Pylance, pyright) resolve `import rbylearn` from the source folder.
+[tool.pyright]
+extraPaths = ["src"]

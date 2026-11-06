@@ -1,0 +1,21 @@
+# Which robot every script in this repository talks to.
+# To switch, change only `target`; the scripts stay exactly the same.
+#   "sim"        rby1-sim, this repository's simulator (start it with `rby1-sim`)
+#   "sim_docker" Rainbow Robotics' docker simulator (`docker compose -f docker-compose.sim.yaml up`)
+#   "real"       the real RB-Y1
+target = "sim"
+
+# rby1-sdk robot model: "a" (wheeled base) or "m" (mecanum base). The same for every target.
+model = "a"
+
+[sim]
+address = "localhost:50052"  # the default 50051 is taken by other software on some laptops (e.g. Multipass)
+variant = "rby1a_1.0"        # simulated RB-Y1 version (ours: rby1a_1.0): rby1a_1.0 to rby1a_1.2, rby1m_1.0 to rby1m_1.3
+gripper_address = "localhost:5558"  # the grippers (rby1-sim serves them as the real gripper server does)
+camera_address = "localhost:5560"   # the cameras of the scene (rby1-sim publishes their images)
+
+[sim_docker]
+address = "localhost:50051"
+
+[real]
+address = "192.168.12.1:50051"

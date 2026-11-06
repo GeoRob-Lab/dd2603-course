@@ -1,0 +1,283 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RB-Y1 Project Guide</title>
+<style>
+  :root {
+    --bg: #fafaf8; --panel: #ffffff; --text: #1d1d1f; --muted: #6e6e73; --line: #e6e6e1; --accent: #2f6fde;
+    --code-bg: #f2f2ef; --tag: #eef3fd; --tag-text: #2f5fc0;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #141416; --panel: #1c1c1f; --text: #ececee; --muted: #9a9aa1; --line: #2c2c30; --accent: #7aa5ff;
+      --code-bg: #232327; --tag: #1f2a40; --tag-text: #9dbbff;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.6 -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", sans-serif; }
+  .wrap { display: grid; grid-template-columns: 200px minmax(0, 1fr); gap: 40px; max-width: 1360px; margin: 0 auto; padding: 40px 32px; }
+  nav { position: sticky; top: 32px; align-self: start; font-size: 13px; }
+  nav a { display: block; color: var(--muted); text-decoration: none; padding: 4px 0; }
+  nav a:hover { color: var(--text); }
+  nav b { display: block; color: var(--text); margin-bottom: 8px; font-size: 14px; }
+  h1 { font-size: 28px; letter-spacing: -0.02em; margin: 0 0 8px; }
+  .lead { color: var(--muted); font-size: 16px; margin: 0 0 32px; }
+  section { border-top: 1px solid var(--line); padding: 28px 0 8px; }
+  h2 { font-size: 19px; margin: 0 0 4px; display: flex; gap: 12px; align-items: baseline; }
+  h2 .n { color: var(--accent); font-variant-numeric: tabular-nums; font-size: 15px; }
+  .goal { color: var(--muted); margin: 0 0 14px; }
+  pre { position: relative; background: var(--code-bg); border-radius: 10px; padding: 12px 14px; overflow-x: auto; font: 13px/1.55 ui-monospace, "SF Mono", Menlo, monospace; margin: 10px 0; }
+  pre .c { color: var(--muted); }
+  code { font: 13px ui-monospace, "SF Mono", Menlo, monospace; background: var(--code-bg); padding: 1px 5px; border-radius: 5px; }
+  pre code { background: none; padding: 0; }
+  .copy { position: absolute; top: 8px; right: 8px; border: 0; background: var(--panel); color: var(--muted); font: 12px inherit; padding: 3px 8px; border-radius: 6px; cursor: pointer; opacity: 0; transition: opacity .15s; }
+  pre:hover .copy { opacity: 1; }
+  .see { border-left: 3px solid var(--accent); padding: 4px 0 4px 12px; color: var(--muted); margin: 12px 0; }
+  .see b { color: var(--text); font-weight: 600; }
+  .rule { border: 1px solid #d9822b; background: rgba(217, 130, 43, .10); border-radius: 10px; padding: 12px 16px; margin: 20px 0 4px; }
+  .rule b { color: var(--text); }
+  table { border-collapse: collapse; width: 100%; font-size: 14px; margin: 8px 0 16px; }
+  td { border-bottom: 1px solid var(--line); padding: 8px 10px 8px 0; vertical-align: top; }
+  th { text-align: left; font-weight: 600; font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; border-bottom: 1px solid var(--line); padding: 6px 10px 6px 0; }
+  td.shape { white-space: nowrap; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 13px; }
+  td:first-child { white-space: nowrap; }
+  .tag { display: inline-block; background: var(--tag); color: var(--tag-text); font-size: 11px; padding: 1px 8px; border-radius: 999px; margin-left: 6px; vertical-align: 1px; }
+  .pipe { display: grid; grid-template-columns: 1.6fr auto 1.1fr auto 1fr auto 1fr auto 1.6fr; align-items: center; gap: 6px; margin: 16px 0 20px; }
+  .pipe figure { margin: 0; text-align: center; }
+  h3.path { font-size: 14px; margin: 18px 0 0; }
+  .pipe figure { min-width: 0; }
+  .pipe figcaption code { font-size: 11px; }
+  .pipe .img { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; aspect-ratio: 4 / 3; display: flex; align-items: center; justify-content: center; }
+  .pipe .img img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .pipe .img img.fit { object-fit: contain; padding: 6px; }
+  .pipe .img svg { width: 84%; height: 84%; }
+  .pipe .enc { position: relative; }
+  .pipe .enc span { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: clamp(11px, 1.05vw, 15px); font-weight: 600; color: var(--tag-text); }
+  .pipe figcaption { font-size: 12px; color: var(--muted); margin-top: 6px; line-height: 1.35; }
+  .pipe figcaption b { display: block; color: var(--text); font-weight: 600; font-size: 13px; }
+  .pipe .arr { color: var(--muted); font-size: 18px; margin-bottom: 34px; }
+  .shots { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin: 12px 0 16px; }
+  .shots figure { margin: 0; }
+  .shots img { width: 100%; display: block; border-radius: 8px; border: 1px solid var(--line); }
+  .shots figcaption { font-size: 12px; color: var(--muted); margin-top: 4px; }
+  .shots figcaption b { color: var(--text); font-weight: 600; margin-right: 4px; }
+  @media (max-width: 560px) { .shots { grid-template-columns: 1fr; } }
+  @media (max-width: 800px) { .pipe { grid-template-columns: 1fr; } .pipe .arr { margin: 0; transform: rotate(90deg); justify-self: center; } .pipe figure { max-width: 320px; justify-self: center; width: 100%; } }
+  @media (max-width: 800px) { .wrap { grid-template-columns: 1fr; gap: 16px; padding: 24px 16px; } nav { position: static; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <nav>
+    <b>RB-Y1 project</b>
+    <a href="#overview">Overview</a>
+    <a href="#sim">1 · Start the simulator</a>
+    <a href="#controller">2 · Running your first policy!</a>
+    <a href="#demos">3 · Look at the demonstrations</a>
+    <a href="#train">4 · Train a policy</a>
+    <a href="#run">5 · Run your policy</a>
+    <a href="#look">6 · Look at the results</a>
+    <a href="#next">7 · Your next steps</a>
+    <a href="#interface">Your policy's interface</a>
+    <a href="#map">Where things are</a>
+  </nav>
+  <main>
+    <h1>🤖 Robot learning for the RB-Y1 Humanoid Robot</h1>
+    <p class="lead">Welcome to DD2603 PROJ1! 👋 This is your opportunity to put all that math into practice 📐 and make a robot smarter 🧠. Your mission: teach a humanoid robot 🤖 how to manipulate objects around it from demonstrations.</p>
+
+    <section id="overview">
+      <h2>Overview</h2>
+      <p class="goal">The robot is in front of a table with 3 RGB-D cameras around it. The goal is to design your own policy that looks at the scene through the cameras and decides how the robot's arms should move to accomplish a given task.</p>
+      <p>Your policy can see the scene in one of two ways. Pick one:</p>
+      <h3 class="path">A. From the point cloud</h3>
+      <div class="pipe">
+        <figure><div class="img"><img src="images/overview_scene.jpg" alt="The robot at the table holding a blue container (open at the top) and a red rod"></div>
+          <figcaption><b>Scene</b>3 RGB-D cameras</figcaption></figure>
+        <span class="arr">→</span>
+        <figure><div class="img"><img class="fit" src="images/overview_pointcloud.png" alt="Point cloud of the container"></div>
+          <figcaption><b>Point cloud</b>of the container</figcaption></figure>
+        <span class="arr">→</span>
+        <figure><div class="img enc"><svg viewBox="0 0 100 75" preserveAspectRatio="none" aria-hidden="true"><path d="M3 4 L97 20 L97 55 L3 71 Z" fill="var(--tag)" stroke="var(--accent)" stroke-width="1.5" stroke-linejoin="round"/></svg><span>PointNet++</span></div>
+          <figcaption><b>Encoder</b>given (pretrained): <code>container<wbr>.embedding</code></figcaption></figure>
+        <span class="arr">→</span>
+        <figure><div class="img"><svg viewBox="0 0 60 60" aria-label="Policy head">
+          <g stroke="var(--line)" stroke-width="0.8"><path d="M10 15 L30 10 M10 15 L30 30 M10 15 L30 50 M10 30 L30 10 M10 30 L30 30 M10 30 L30 50 M10 45 L30 10 M10 45 L30 30 M10 45 L30 50 M30 10 L50 22 M30 30 L50 22 M30 50 L50 22 M30 10 L50 38 M30 30 L50 38 M30 50 L50 38"/></g>
+          <g fill="var(--accent)"><circle cx="10" cy="15" r="4"/><circle cx="10" cy="30" r="4"/><circle cx="10" cy="45" r="4"/><circle cx="30" cy="10" r="4"/><circle cx="30" cy="30" r="4"/><circle cx="30" cy="50" r="4"/><circle cx="50" cy="22" r="4"/><circle cx="50" cy="38" r="4"/></g></svg></div>
+          <figcaption><b>Policy head</b>+ proprioceptives</figcaption></figure>
+        <span class="arr">→</span>
+        <figure><div class="img"><img src="images/overview_moved.jpg" alt="The robot after moving its left hand to put the rod into the container"></div>
+          <figcaption><b>Motion</b>the arms move</figcaption></figure>
+      </div>
+      <h3 class="path">B. From the raw image</h3>
+      <div class="pipe">
+        <figure><div class="img"><img src="images/overview_scene.jpg" alt="The robot at the table holding a blue container (open at the top) and a red rod"></div>
+          <figcaption><b>Scene</b>3 RGB-D cameras</figcaption></figure>
+        <span class="arr">→</span>
+        <figure><div class="img"><img src="images/overview_camera.jpg" alt="The centre camera's colour image of the robot's hands, the rod and the container"></div>
+          <figcaption><b>Camera image</b>centre camera: <code>camera_centre<wbr>.image</code></figcaption></figure>
+        <span class="arr">→</span>
+        <figure><div class="img enc"><svg viewBox="0 0 100 75" preserveAspectRatio="none" aria-hidden="true"><path d="M3 4 L97 20 L97 55 L3 71 Z" fill="var(--tag)" stroke="var(--accent)" stroke-width="1.5" stroke-linejoin="round"/></svg><span>ResNet18</span></div>
+          <figcaption><b>Encoder</b>given (pretrained): <code>camera_centre<wbr>.embedding</code></figcaption></figure>
+        <span class="arr">→</span>
+        <figure><div class="img"><svg viewBox="0 0 60 60" aria-label="Policy head">
+          <g stroke="var(--line)" stroke-width="0.8"><path d="M10 15 L30 10 M10 15 L30 30 M10 15 L30 50 M10 30 L30 10 M10 30 L30 30 M10 30 L30 50 M10 45 L30 10 M10 45 L30 30 M10 45 L30 50 M30 10 L50 22 M30 30 L50 22 M30 50 L50 22 M30 10 L50 38 M30 30 L50 38 M30 50 L50 38"/></g>
+          <g fill="var(--accent)"><circle cx="10" cy="15" r="4"/><circle cx="10" cy="30" r="4"/><circle cx="10" cy="45" r="4"/><circle cx="30" cy="10" r="4"/><circle cx="30" cy="30" r="4"/><circle cx="30" cy="50" r="4"/><circle cx="50" cy="22" r="4"/><circle cx="50" cy="38" r="4"/></g></svg></div>
+          <figcaption><b>Policy head</b>+ proprioceptives</figcaption></figure>
+        <span class="arr">→</span>
+        <figure><div class="img"><img src="images/overview_moved.jpg" alt="The robot after moving its left hand to put the rod into the container"></div>
+          <figcaption><b>Motion</b>the arms move</figcaption></figure>
+      </div>
+      <div class="rule"><b>⚠ CAUTION for assignment submission</b><br>
+        We give you the code for everything above: the simulator, the cameras, the point-cloud and image encoders, and the scripts that train, run and score a policy. The codebase also has a folder, <code>student/</code>, which is yours. There you will write your code for implementing and training your policy. When you submit your code, you should <b>not</b> hand in the whole codebase, <b>only a zip of your <code>student/</code> folder</b>. Then we will test it with the course code exactly as we gave it to you, so do not change anything outside <code>student/</code> as those changes would not be in your submission, and your policy must work without them. If you think the course code needs a change, ask the TAs.</div>
+    </section>
+
+    <section id="sim">
+      <h2><span class="n">1</span>Start the simulator</h2>
+      <p class="goal">First follow the setup in <code>README.md</code>, so that you have the environment and the demonstrations. Then start the robot simulation in its own terminal, with the environment activated (<code>conda activate ./miniconda_env</code>), and leave it running.</p>
+<pre><code>rby1-sim</code></pre>
+      <p>It takes its scene and the robot's start pose from <code>simulator:</code> in <code>configs/defaults.yaml</code>.</p>
+      <div class="see"><b>You should see</b> a window with the robot at a table, a red rod in its left hand and a blue container in its right, its arms raised above the table in its <code>ready</code> pose. Close the window or press Ctrl+C to stop it.</div>
+    </section>
+
+    <section id="controller">
+      <h2><span class="n">2</span>Running your first policy!</h2>
+      <p class="goal">Before making your own policy, watch a pretrained policy control the robot. You might also notice that there is plenty of room for improvement!. With the simulator still running, in a new terminal (as always, activate your conda environment):</p>
+<pre><code>python scripts/run_policy.py      <span class="c"># runs run: checkpoint: in student/project.yaml, the pretrained policy</span></code></pre>
+      <div class="see"><b>You should see</b> a control panel open in your browser, and the robot move to the task's start pose. Press <b>▶ Start</b> on the panel: the cameras find the container, and the left hand brings the rod into it. The first time you run this it might take a bit longer because the script downloads the weights for the perception encoder (about 18 MB).</div>
+      <div class="shots">
+        <figure><img src="images/policy_start.jpg" alt="The robot at its start pose, the rod away from the container"><figcaption><b>0 s</b> the start pose</figcaption></figure>
+        <figure><img src="images/policy_middle.jpg" alt="The left hand bringing the rod towards the container's opening"><figcaption><b>3 s</b> the rod goes to the opening</figcaption></figure>
+        <figure><img src="images/policy_end.jpg" alt="The rod inside the container"><figcaption><b>8 s</b> the rod in the container</figcaption></figure>
+      </div>
+      <p>The policy you just used is a small neural network trained on demonstrations of this task using conventional behavior cloning. The whole pipeline takes the cameras' images of the blue container in the robot's right arm, then constructs its point cloud, encodes it, and finally feeds it to the policy to determine how the left hand should move.</p>
+    </section>
+
+    <section id="demos">
+      <h2><span class="n">3</span>Look at the demonstrations</h2>
+      <p class="goal">You have 40 demonstrations of the task (<code>datasets/insertion_vision</code>, which you downloaded during the setup in the README), each with the container somewhere else: demos 0 to 29 for training and 30 to 39 for validation. The validation demos are made from other real demonstrations than the training ones, so they test your policy on motions it has not seen.</p>
+      <p>Visualizing the demos: To visualize the demos you can run this in a new terminal which will open up a page in your browser (this might take a couple of seconds). If the visualizer does not suit your needs you can of course visualize the datasets as you please.</p>
+<pre><code>python visualization/report.py datasets/insertion_vision --open      <span class="c"># → reports/insertion_vision.html</span></code></pre>
+      <div class="see"><b>You should see</b> a list of the demos on the left. Click one to load it: the robot re-drawn in the simulator, what each camera saw, the container's point cloud with the rod, and the signals you pick, all at the same moment. You can use the slider at the bottom to play the full demo. On the left you will also see a few signals from the dataset that could be of interest. If you scroll down and press on them to show/hide their plots.</div>
+      <p>Each demonstration is a folder with one file per signal (hand poses, joints, gripper, the container's point cloud) and a video per camera. <code>dataset_config.json</code> says what is in it.</p>
+    </section>
+
+    <section id="train">
+      <h2><span class="n">4</span>Train a policy</h2>
+      <p class="goal">Train a neural network on the demonstrations. <code>student/project.yaml</code> says which policy, what goes in, what comes out and how long to train. The data preprocessing is the generally the same, except that you have the option of working with the pointcloud of the blue container or a raw image of the scene. Generally the settings for the preprocessing are in <code>configs/defaults.yaml</code>.</p>
+<pre><code>python scripts/train.py</code></pre>
+      <div class="see"><b>You should see</b> the training and validation loss every 100 epochs, then <code>Saved the run in policies/my_first_policy</code>, with <code>losses.png</code> and rollout plots in that folder.</div>
+      <p>By default this trains <code>student/example_policy.py</code>, a small MLP. To try your own network, fill in the TODOs of <code>student/my_policy.py</code> and set <code>policy: type: student/my_policy.py:MyPolicy</code> in <code>student/project.yaml</code>. Give each try its own <code>policy_name</code>, so the runs don't overwrite each other.</p>
+    </section>
+
+    <section id="run">
+      <h2><span class="n">5</span>Run a trained policy</h2>
+      <p class="goal">You can run a policy the same way as the pretrained one in step 2. To choose your own policy, in <code>student/project.yaml</code>, set <code>run: checkpoint: policies/{policy_name}/checkpoints/best.pt</code>. Give a demo's number to start from that demonstration (one it did not train on) with the container where it was in that demo.</p>
+<pre><code>python scripts/run_policy.py --demo 15      <span class="c"># or add demo: 15 under run: in student/project.yaml</span></code></pre>
+      <div class="see"><b>You should see</b> the right arm move the container to where it was in demo 15 (one of its 5 validation demos), then (after <b>▶ Start</b>) the left hand bring the rod into it. To try another demo, type its number in the panel's demo box. To watch it rollout for multiple demos in a row, pick them under <b>▶▶ Run them one after the other</b> (e.g. its validation demos) and leave it running.</div>
+      <p>To score it, run it from every validation demo (demos 30 to 39, from the dataset's <code>split.json</code>) and count how often the rod ends in the container. The settings are under <code>evaluate:</code>.</p>
+<pre><code>python scripts/evaluate_insertion_sim.py</code></pre>
+      <div class="see"><b>You should see</b> one line per demo, inside or outside and how deep, then <code>Rod in the container in …% of … runs</code>.</div>
+    </section>
+
+    <section id="look">
+      <h2><span class="n">6</span>Look at results</h2>
+      <p class="goal">Every run is recorded like a demonstration. Make a page of the demos and your runs, and open it in a browser.</p>
+<pre><code>python visualization/report.py      <span class="c"># your runs (logs/PolicyController) → reports/PolicyController.html</span></code></pre>
+      <p>To see the demos and your runs together, add <code>report: {folders: [{dataset}, logs/PolicyController]}</code> to <code>student/project.yaml</code>.</p>
+      <div class="see"><b>You should see</b> the hand's 3D paths with the table and cameras, and any signal over time. Then pick a run and play it. You should see the robot redrawn in the simulator, the camera images, the point cloud and the signals all move together. Drag the time back and forth, or use ← → to step.</div>
+    </section>
+
+    <section id="next">
+      <h2><span class="n">7</span>Your next steps</h2>
+      <p class="goal">By now you have run the pretrained policy, trained the example policy, run it, scored it and looked at its rollouts. Now it is time to build your own! At the end the two main files you will need to change are:
+      <ul>
+        <li><code>student/my_policy.py</code>: your policy, its three methods to fill in (the next section says what they get and return; <code>student/example_policy.py</code> is a complete one).</li>
+        <li><code>student/project.yaml</code>: its settings, in four sections, one per script: (1) the policy (its class, its settings, what it sees and does), (2) training, (3) which policy to run, (4) which policy to score.</li>
+      </ul>
+      <p>Of course you are free to write more code within <code>student/</code> as needed by your implementation.</p>
+      <p>Remember: only <code>student/</code> is handed in, so any changes you make to the code outsie <code>student/</code> will be used once you submit your code (the notice at the top of this page).</p>
+      <p>Then the process is just as explained above: <code>python scripts/train.py</code>, <code>python scripts/run_policy.py</code>, <code>python scripts/evaluate_insertion_sim.py</code>, and check the report to see what happened.</p>
+    </section>    
+
+    <section id="interface">
+      <h2>Your policy's interface</h2>
+      <p class="goal">Your policy is a class in <code>student/my_policy.py</code> (<code>policy: type: student/my_policy.py:MyPolicy</code> in <code>student/project.yaml</code>). Training, evaluation and the robot treat every policy the same way, through three methods. What your network is, its loss, and how it makes an action (one pass, an integration, a denoising loop, …) are all yours.</p>
+<pre><code>class MyPolicy(torch.nn.Module):
+    def __init__(self, input_dim, output_dim, features=None, **settings):   <span class="c"># settings: the rest of policy: in student/project.yaml</span>
+    def loss(self, x, y):       <span class="c"># a training batch: x (B, input_dim), y (B, output_dim) -> a scalar tensor</span>
+    def predict(self, x):       <span class="c"># on the robot: one input x (numpy) -> one output (numpy)</span></code></pre>
+      <p><b>The vectors.</b> <code>x</code> holds your <code>input_features</code> side by side, in their order, after the preprocessing. <code>y</code> holds <code>chunk_size</code> actions one after the other, each made of your <code>output_features</code> side by side. If your <code>__init__</code> takes <code>features</code>, it gets their sizes, and <code>feature_slices</code> says where each one is, e.g.,</p>
+<pre><code>features = {"inputs":  {"left.ee.pose": [7], "container.embedding": [6]},   <span class="c"># [1027] with embedding_dim: null</span>
+            "outputs": {"left.commands.arm.ee.velocity": [6]},
+            "chunk_size": 1}
+from rbylearn.learning.policies import feature_slices
+s = feature_slices(features)
+q = x[..., s["left.ee.pose"]][..., 3:7]      <span class="c"># the hand's unit quaternion</span></code></pre>
+      <p><b>Inputs</b> you can choose in <code>policy: input_features:</code>. Each feature's shape is what your policy gets in <code>features</code>; in the input vector <code>x</code> they are flattened and side by side. The two embeddings' shapes depend on <code>policy: embedding_dim:</code> in <code>student/project.yaml</code>: with the default <code>3</code> each is reduced to its encoder's first 3 principal components (PCA), and with <code>null</code> it is the encoder's whole output. So read the sizes from <code>features</code> (or <code>input_dim</code>) rather than writing them into your code.</p>
+      <table class="features">
+        <tr><th>Feature</th><th>Shape</th><th>Description</th></tr>
+        <tr><td><code>left.ee.pose</code></td><td class="shape">(7,)</td><td>The hand's position (x, y, z), then its orientation as a unit quaternion (qw, qx, qy, qz) with qw ≥ 0. The position is seen from the container's centre if the policy takes <code>container.embedding</code> (the robot's base frame otherwise, e.g. with <code>camera_centre.embedding</code>), and scaled to [-1, 1]; the quaternion is left as it is, a point on the sphere S³. Rotations: the robot's base frame</td></tr>
+        <tr><td><code>container.embedding</code></td><td class="shape">(6,)<br>or (1027,)</td><td>What the cameras see of the container: its point cloud's centre (x, y, z), then its shape and orientation (PointNet++, pretrained and frozen), standardized. By default that is the first 3 principal components of PointNet++'s 1024 numbers; with <code>embedding_dim: null</code> in <code>student/project.yaml</code> it is all 1024</td></tr>
+        <tr><td><code>container.pointcloud</code></td><td class="shape">(1536,)</td><td>The container's point cloud itself: 512 points (x0, y0, z0, x1, …) in metres, base frame, from the three cameras</td></tr>
+        <tr><td><code>camera_centre.embedding</code></td><td class="shape">(3,)<br>or (512,)</td><td>What the centre camera sees (ResNet18, pretrained on ImageNet and frozen), standardized. By default that is the first 3 principal components of ResNet18's 512 numbers; with <code>embedding_dim: null</code> in <code>student/project.yaml</code> it is all 512.</td></tr>
+        <tr><td><code>camera_centre.image</code></td><td class="shape">(3, 96, 128)</td><td>The centre camera's raw colour image: 3 channels (RGB) of 96 × 128 pixels, values 0 to 255, not scaled. The camera runs at 10 Hz, so the policy gets its latest image</td></tr>
+        <tr><td><code>left.gripper.closing</code></td><td class="shape">(1,)</td><td>How closed the left gripper is: 0 is fully open, 1 is fully closed (holding the rod, it is about 0.7)</td></tr>
+        <tr><td><code>left.arm.joints.position</code></td><td class="shape">(7,)</td><td>The left arm's 7 joint angles (rad)</td></tr>
+      </table>
+      <p><b>Outputs</b> in <code>policy: output_features:</code> (the robot moves the left hand to follow them, within the safety limits):</p>
+      <table class="features">
+        <tr><th>Feature</th><th>Shape</th><th>Description</th></tr>
+        <tr><td><code>left.commands.arm.ee.velocity</code></td><td class="shape">(6,)</td><td>The hand's velocity: linear (vx, vy, vz) and angular (ωx, ωy, ωz), base frame, each scaled by its largest value in the demos. The angular velocity is a tangent vector of the rotations: the hand turns by exp(ω dt) each step</td></tr>
+        <tr><td><code>left.commands.arm.ee.pose</code></td><td class="shape">(7,)</td><td>The hand's next pose, position and unit quaternion, base frame, as it is (not scaled)</td></tr>
+        <tr><td><code>left.commands.gripper</code></td><td class="shape">(1,)</td><td>How closed the left gripper should be: 0 fully open, 1 fully closed. The demos open it at the end to drop the rod into the container</td></tr>
+      </table>
+      <p><b>Timing.</b> <code>dt</code> is the time between two actions (0.05 s). With <code>chunk_size: n</code> your policy predicts n actions at once; the robot runs the first <code>execute_steps</code> of them, then asks again. Everything else about the data (the time step, the point-cloud encoder, the scaling, the noisy copies for training) is in <code>configs/defaults.yaml</code>'s <code>preprocessing:</code>. It is the same for everyone, so policies stay comparable.</p>
+    </section>
+
+    <section id="map">
+      <h2>Where things are</h2>
+      <table>
+        <tr><td><code>student/</code><span class="tag">yours</span></td><td>Your settings and your code. Course updates never change anything in it</td></tr>
+        <tr><td><code>student/project.yaml</code><span class="tag">your settings</span></td><td>Every step's settings, in one file</td></tr>
+        <tr><td><code>student/my_policy.py</code><span class="tag">your policy</span></td><td>Your own policy: the three methods to fill in</td></tr>
+        <tr><td><code>student/example_policy.py</code></td><td>A complete example policy (a small MLP), the one trained until you switch to yours</td></tr>
+        <tr><td><code>scripts/</code></td><td>The commands: <code>train.py</code> trains, <code>run_policy.py</code> runs a policy on the robot, <code>evaluate_insertion_sim.py</code> scores it in the simulator</td></tr>
+        <tr><td><code>policies/</code></td><td>Your trained policies (<code>policies/{policy_name}/</code>), next to the course's <code>policies/pretrained/</code></td></tr>
+        <tr><td><code>configs/defaults.yaml</code></td><td>The course's defaults: any setting you leave out of <code>student/project.yaml</code> comes from here, and so does the preprocessing. Don't edit it</td></tr>
+        <tr><td><code>visualization/</code></td><td>Plots and the HTML report</td></tr>
+        <tr><td><code>src/rbylearn/learning/</code></td><td>Policies, training, evaluation</td></tr>
+        <tr><td><code>src/rbylearn/preprocessing/</code></td><td>Steps that prepare the data (resample, normalize, encode point clouds, …)</td></tr>
+        <tr><td><code>src/rbylearn/vision/</code></td><td>Point clouds from the cameras and their encoders</td></tr>
+        <tr><td><code>src/rbylearn/sim/</code></td><td>The simulator: robot, cameras, gripper</td></tr>
+        <tr><td><code>configs/</code></td><td>Which robot to talk to, safety limits, named poses</td></tr>
+      </table>
+    </section>
+  </main>
+</div>
+<script>
+  document.querySelectorAll("pre").forEach(pre => {
+    const b = document.createElement("button"); b.className = "copy"; b.textContent = "copy";
+    b.onclick = () => {
+      const text = pre.querySelector("code").innerText.split("\n").map(l => l.replace(/\s+#.*$/, "")).join("\n").trim();
+      navigator.clipboard?.writeText(text).then(() => { b.textContent = "copied"; setTimeout(() => b.textContent = "copy", 1200); });
+    };
+    pre.appendChild(b);
+  });
+  // links within the page scroll there slowly (CSS smooth scrolling can't set its speed)
+  const calm = !matchMedia("(prefers-reduced-motion: reduce)").matches;
+  document.querySelectorAll('a[href^="#"]').forEach(a => a.addEventListener("click", e => {
+    const target = document.getElementById(decodeURIComponent(a.hash.slice(1)));
+    if (!target || !calm) return;
+    e.preventDefault();
+    const from = scrollY, to = target.getBoundingClientRect().top + scrollY - (parseFloat(getComputedStyle(target).scrollMarginTop) || 0);
+    const ms = Math.min(1600, 700 + Math.abs(to - from) * 0.15), t0 = performance.now();
+    const ease = u => u < 0.5 ? 4 * u * u * u : 1 - Math.pow(-2 * u + 2, 3) / 2;
+    const step = now => { const u = Math.min(1, (now - t0) / ms); scrollTo(0, from + (to - from) * ease(u)); if (u < 1) requestAnimationFrame(step); };
+    requestAnimationFrame(step);
+    history.pushState(null, "", a.hash);
+  }));
+</script>
+</body>
+</html>
