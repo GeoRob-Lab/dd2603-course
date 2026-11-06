@@ -11,8 +11,16 @@ and that folder is all you hand in.
 
 ## Setup
 
-You need **git** and **conda** (e.g. Miniconda) on macOS or Linux. On Windows, use Ubuntu in WSL and keep the
-project in your Linux home folder (`~`), not under `/mnt/c`. Check that you have both:
+**Your computer must be one of these**, because the robot's software (rby1-sdk) is only made for them:
+
+- a Mac with an Apple chip (M1 or newer) on macOS 14 (Sonoma) or newer;
+- Linux with glibc 2.35 or newer, e.g. Ubuntu 22.04 or newer;
+- Windows, with Ubuntu 22.04 or newer in WSL. Keep the project in your Linux home folder (`~`), not under `/mnt/c`.
+
+Intel Macs, macOS 13 or older, and older Linux versions (e.g. Ubuntu 20.04) do not work. **If your computer is not
+on the list, contact the TAs before you start**, and we will find a solution for you.
+
+You also need **git** and **conda** (e.g. Miniconda). Check that you have both:
 
 ```bash
 git --version
