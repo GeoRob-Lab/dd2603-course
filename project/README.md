@@ -37,14 +37,16 @@ git clone https://github.com/GeoRob-Lab/dd2603-course.git
 cd dd2603-course/project
 conda env create -p ./miniconda_env -f environment.yml
 conda activate ./miniconda_env
-python -m rbylearn.sim.models          # the robot's model files, about 250 MB, once
+python -m rbylearn.sim.models
 ```
+
+The last command downloads the robot's model files (about 250 MB), once.
 
 Last, get the demonstrations (about 400 MB) from the course's GitHub release and unzip them into `datasets/`:
 
 ```bash
 curl -LO https://github.com/GeoRob-Lab/dd2603-course/releases/download/project-v1.0/insertion_vision.zip
-unzip insertion_vision.zip -d datasets/        # -> datasets/insertion_vision/
+unzip insertion_vision.zip -d datasets/
 rm insertion_vision.zip
 ```
 
@@ -55,11 +57,13 @@ You should see the environment created without errors, and `datasets/insertion_v
 ## The guide
 
 **Everything else is in the guide: [open it in your browser](https://raw.githack.com/GeoRob-Lab/dd2603-course/main/project/docs/guide.html).**
-You also have it in your clone, as `docs/guide.html`:
+You also have it in your clone, as `docs/guide.html`. To open it from the `project/` folder on macOS:
 
 ```bash
-open docs/guide.html        # macOS; on Linux: xdg-open docs/guide.html; on WSL: explorer.exe docs/guide.html
+open docs/guide.html
 ```
+
+On Linux, use `xdg-open docs/guide.html` instead, and on WSL `explorer.exe docs/guide.html`.
 
 It walks you through the simulator, running a first policy, the demonstrations, training, running and
 evaluating your own policy, and it lists every input and output your policy can use.
