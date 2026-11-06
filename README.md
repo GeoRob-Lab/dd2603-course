@@ -6,7 +6,7 @@ This repository contains the assignments and the course project of DD2603: the n
 |---|---|---|
 | Programming Assignment 1 | Manifold geometry for robot poses | [assignments/assignment1](assignments/assignment1/README.md) |
 | Programming Assignment 2 | *published later* | |
-| Project | *published later* | [project](project/README.md) |
+| Project | Policy Learning for Robot Control | [project](project/README.md) |
 
 ## How the assignments work
 
@@ -26,5 +26,5 @@ dd2603-course/
 ├── assignments/
 │   ├── assignment1/       notebook, instructions, and the assignment1utils package with its data
 │   └── ...                later assignments, one folder each
-└── project/               the course project (published later)
+└── project/               see (project/README.md) for more details
 ```
