@@ -2,7 +2,7 @@
 Public checks for Programming Assignment 2. Run them as often as you like; they never change your objects.
 
     assignment2utils.checks.part1(Sphere, PoseManifold, frechet_mean)
-    assignment2utils.checks.part2(Sphere, UnitQuaternions, WrappedGaussian, quat_body_basis)
+    assignment2utils.checks.part2(Sphere, UnitQuaternions, WrappedGaussian)
     assignment2utils.checks.part3(ConformalMetric)
     assignment2utils.checks.part4(christoffel, airm_rgrad, airm_exp, rgd_step)
     assignment2utils.checks.part5(bimap, reeig, SPDMetricNet, airm_exp)
@@ -119,7 +119,7 @@ def part1(Sphere, PoseManifold, frechet_mean, seed=0):
 
 
 # ======================================================================= Part 2
-def part2(Sphere, UnitQuaternions, WrappedGaussian, quat_body_basis, seed=0):
+def part2(Sphere, UnitQuaternions, WrappedGaussian, seed=0):
     rng = _rng(seed)
     r = _Report("Part 2: WrappedGaussian")
     S = Sphere(2)
@@ -156,16 +156,6 @@ def part2(Sphere, UnitQuaternions, WrappedGaussian, quat_body_basis, seed=0):
         X = WrappedGaussian(Q, q0, 0.01 * np.eye(3)).sample(100, rng=rng)
         return X.shape == (100, 4) and np.all(Q.belongs(X))
     r.check("works on S^3 (UnitQuaternions) with a 3x3 cov", s3)
-
-    def body():
-        Q = UnitQuaternions()
-        q0 = Q.random_point(rng=rng)
-        B = quat_body_basis(q0)
-        w = rng.normal(size=3) * 0.7
-        R_expected = rot.quat_to_matrix(q0) @ rot.matrix_from_rotvec(w)
-        R_got = rot.quat_to_matrix(Q.exp(q0, B @ (w / 2)))
-        return max(_err(B.T @ B, np.eye(3)), np.abs(q0 @ B).max(), _err(R_got, R_expected))
-    r.check("quat_body_basis: Exp_q(B w/2) is the rotation R_q exp([w]x)", body, 1e-10)
     r.show()
 
 
@@ -342,26 +332,22 @@ def part5(bimap, reeig, SPDMetricNet, airm_exp, seed=0):
         return float((Z - ref).abs().max())
     r.check("reeig(Y, eps): eigenvalues eps + softplus(lambda - eps)", re, 1e-10)
 
-    def forward(use_bimap, use_reeig):
-        def fn():
-            net = SPDMetricNet(use_bimap=use_bimap, use_reeig=use_reeig, seed=1)
-            with torch.no_grad():
-                for p in net.mlp.parameters():
-                    p.copy_(0.3 * torch.randn(p.shape, generator=g))
-            x = torch.randn(4, 3, generator=g)
-            M = net.shape(x)
-            assert tuple(M.shape) == (4, 3, 3), f"shape(x) has shape {tuple(M.shape)}, expected (4, 3, 3)"
-            with torch.no_grad():
-                P, W1, W2 = net.weights()
-                Z = airm_exp(P, mt.vec_to_sym(net.mlp((x - net.centre) / net.scale), net.n))
-                if use_bimap:
-                    Z = W1.T @ Z @ W1
-                    if use_reeig:
-                        lam, U = torch.linalg.eigh(Z)
-                        Z = U @ torch.diag_embed(net.eps + torch.nn.functional.softplus(lam - net.eps)) @ U.transpose(-1, -2)
-                    Z = W2.T @ Z @ W2
-            return float((M.detach() - Z).abs().max() / Z.abs().max())
-        return fn
+    def forward():
+        net = SPDMetricNet(seed=1)
+        with torch.no_grad():
+            for p in net.mlp.parameters():
+                p.copy_(0.3 * torch.randn(p.shape, generator=g))
+        x = torch.randn(4, 3, generator=g)
+        M = net.shape(x)
+        assert tuple(M.shape) == (4, 3, 3), f"shape(x) has shape {tuple(M.shape)}, expected (4, 3, 3)"
+        with torch.no_grad():
+            P, W1, W2 = net.weights()
+            Z = airm_exp(P, mt.vec_to_sym(net.mlp((x - net.centre) / net.scale), net.n))
+            Z = W1.T @ Z @ W1
+            lam, U = torch.linalg.eigh(Z)
+            Z = U @ torch.diag_embed(net.eps + torch.nn.functional.softplus(lam - net.eps)) @ U.transpose(-1, -2)
+            Z = W2.T @ Z @ W2
+        return float((M.detach() - Z).abs().max() / Z.abs().max())
 
     def manifold_params():
         import warnings
@@ -375,9 +361,7 @@ def part5(bimap, reeig, SPDMetricNet, airm_exp, seed=0):
             ok &= tuple(W.shape) == shape and float((W.T @ W - torch.eye(shape[1])).detach().abs().max()) < 1e-12
         return ok
     r.check("riemannian variant: P on the SPD manifold, W1, W2 on Stiefel (geoopt)", manifold_params)
-    r.check("SPDMetricNet.shape: MLP, Exp_P, BiMap, ReEig, BiMap", forward(True, True), 1e-10)
-    r.check("SPDMetricNet.shape with use_reeig=False", forward(True, False), 1e-10)
-    r.check("SPDMetricNet.shape with use_bimap=False (M = Exp_P(xi), n = 3)", forward(False, False), 1e-10)
+    r.check("SPDMetricNet.shape: MLP, Exp_P, BiMap, ReEig, BiMap", forward, 1e-10)
 
     def with_prior():
         prior = lambda y: (1.0 + (y ** 2).sum(-1))[:, None, None] * torch.eye(3)      # noqa: E731
