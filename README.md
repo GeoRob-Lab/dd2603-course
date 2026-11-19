@@ -25,6 +25,10 @@ dd2603-course/
 ├── README.md              this file
 ├── assignments/
 │   ├── assignment1/       notebook, instructions, and the assignment1utils package with its data
-│   └── ...                later assignments, one folder each
-└── project/               see (project/README.md) for more details
+│   └── assignment2/       notebook, instructions, and the assignment2utils package with its data
+└── project/               the course project: simulator, robot controller, demonstrations, vision encoders and scripts
+    ├── README.md          setup and instructions for the project
+    └── student/           your own policy code: the only folder you hand in
 ```
+
+See the [project README](project/README.md) for how to set up and work on the project.
