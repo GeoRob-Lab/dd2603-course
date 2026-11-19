@@ -1,0 +1,30 @@
+# Conda environment created inside the repo
+miniconda_env/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+
+# OS / editors
+.DS_Store
+.vscode/
+.idea/
+.cache/
+
+# Run logs written by ControlRobot
+logs/
+# HTML reports made by visualization/report.py
+reports/
+deprecated/
+# Demonstrations and trained policies (scripts/train.py); policies/pretrained/ is the course's
+data/
+models/
+policies/*
+!policies/pretrained/
+datasets/
+# MuJoCo's own warnings log, and sim evaluations of the pretrained policy
+MUJOCO_LOG.TXT
+policies/pretrained/*_sim_evaluation.json

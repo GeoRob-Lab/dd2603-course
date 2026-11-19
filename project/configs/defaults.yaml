@@ -1,0 +1,116 @@
+# =====================================================================================================
+#  The course's default settings. DO NOT EDIT: your settings go in student/project.yaml.
+#
+#  student/project.yaml is read on top of this file: a setting you write there wins, and anything you
+#  leave out comes from here. When the course code is updated, new settings get a default here, set so
+#  that the code behaves as before; a default here never changes once released.
+#  Lists (e.g. input_features, preprocessing steps) are replaced as a whole, not merged.
+# =====================================================================================================
+
+# ---- The task and its demonstrations ----------------------------------------------------------------
+dataset: datasets/insertion_vision                # the demos you train on (downloaded during the setup, README.md)
+
+simulator:                                        # rby1-sim (step 1)
+  scene: scenes/insertion_vision.xml              # the table, the cameras and the objects
+  start_pose: ready                               # the robot's pose at start (configs/robot_configs.yaml)
+  headless: false                                 # true: no window (faster; the cameras still work)
+
+# ---- The policy and its training (step 4; student/project.yaml sets the ones you choose) ------------
+policy_name: my_first_policy                      # saved in policies/<policy_name>/
+output_dir: policies
+overwrite: false                                  # true: replace policies/<policy_name>/ if it exists
+
+policy:
+  type: mlp                                       # "mlp" (the built-in MLP), or a class: "student/my_policy.py:MyPolicy"
+  dt: 0.05                                        # s between two actions (20 Hz)
+  chunk_size: 1                                   # actions predicted at once
+  execute_steps: 1                                # of them executed before asking again
+  input_features: [left.ee.pose, container.embedding]   # the hand's pose and what the cameras see of the container
+  output_features: [left.commands.arm.ee.velocity]      # the hand's velocity
+  embedding_dim: 3                                # container.embedding / camera_centre.embedding: the encoder's output reduced to its
+                                                  # first 3 principal components (PCA), or null: the whole output (PointNet++ 1024, ResNet18 512)
+
+training:
+  epochs: 600
+  batch_size: 256
+  lr: 0.001
+  seed: 0
+  rollout_every: 10                               # checkpoints/best.pt: the one whose rollouts from the
+                                                  # validation demos' starts end closest to the demos' ends
+  checkpoint_every: 100                           # also keep checkpoints/epoch_<n>.pt (0: never)
+
+# ---- Running, scoring and looking at it (steps 3, 6 and 7) -------------------------------------------
+run:                                              # scripts/run_policy.py
+  checkpoint: policies/pretrained/insertion_vision_mlp.pt  # yours: policies/{policy_name}/checkpoints/best.pt
+  demo: 0                                         # start where this demo started (its number); the policy only knows starts like the demos'
+  dataset: null                                   # the demo's dataset (null: the one the policy was trained on)
+  speed: 0.7                                      # scales the policy's velocities
+  duration: 12                                    # s at most (the demos take 4 to 6 s, so about 9 s at speed 0.7)
+  panel: true                                     # a control panel in the browser: start, hold, back to the start,
+                                                  # another demo, success/failure, grippers (false: one rollout)
+  wait_for_enter: true                            # without the panel: wait for Enter at the start pose
+
+evaluate:                                         # scripts/evaluate_insertion_sim.py
+  checkpoint: policies/{policy_name}/checkpoints/best.pt
+  dataset: null                                   # the demos to start from (null: the policy's own dataset)
+  demos: validation                               # "validation" (the policy's validation demos), "all", or a list: [0, 5, 12]
+  speed: 0.7
+  duration: 12
+
+report:                                           # visualization/report.py
+  folders: [logs/PolicyController]                # datasets and log folders, e.g. [{dataset}, logs/PolicyController]
+  detail: 40                                      # rollouts per folder with replay, images and point clouds
+  replay: true                                    # re-draw the episodes in the simulator
+  open: true                                      # open the page in the browser
+
+
+############################################################################################################################################
+# Preprocessing
+# DO NOT CHANGE THESE. If for any reason you believe you need to, please contact the TAs first to get their approval.
+# These are all the preprocessing steps that take the raw demo data (e.g., raw images, poses, and velocities) 
+# and turn them into the features that the policy sees and predicts (e.g., normalized poses, visual observation embeddings, and velocities).
+############################################################################################################################################
+# The vision steps run only for the vision feature your policy takes (container.embedding, the point cloud's, or
+# camera_centre.embedding, the image's): a policy on the image never sees anything made from the point cloud.
+preprocessing:                                    # steps that turn demos (and live observations) into inputs
+  validation_ratio: 0.15                          # of the real demos held out for validation
+  steps:
+    - type: resample                              # demos at the policy's time step
+      dt: 0.05
+      hold: [container.pointcloud, camera_centre.image]   # these come at 10 Hz: each step gets the latest one
+    - type: pointcloud_encoder                    # container.pointcloud -> container.embedding:
+      feature: container.pointcloud               # its centroid (x, y, z), then PointNet++ (pretrained,
+      backbone: pointnet2-modelnet40              # frozen) features of its shape and orientation,
+      centroid: true                              # reduced to their first principal components
+      pca_dim: 3                                  # set by policy: embedding_dim
+    - type: image_encoder                         # camera_centre.image -> camera_centre.embedding:
+      feature: camera_centre.image                # ResNet18 (pretrained on ImageNet, frozen) features of
+      backbone: resnet18-frozen                   # the image (one 512-d vector), reduced to their first
+      spatial: false                              # principal components
+      pca_dim: 3                                  # set by policy: embedding_dim
+    - type: quaternion_sign
+      features: [left.ee.pose]
+    - type: pose_to_velocity                      # actions: end-effector velocity between poses
+      pose_feature: left.ee.pose
+      output_feature: left.commands.arm.ee.velocity
+    - type: relative_to_pointcloud                # the hand's position seen from the container's centre:
+      pose_feature: left.ee.pose                  # the same insertion wherever the container is
+      pointcloud_feature: container.pointcloud
+    - type: corrective_noise                      # training only: noisy poses labelled with the
+      pose_feature: left.ee.pose                  # velocity back to the demo
+      velocity_feature: left.commands.arm.ee.velocity
+      position_std: 0.01                          # m
+      rotation_std_deg: 3.0
+      copies: 5
+    - type: normalize                             # translations to [-1, 1]
+      features: [left.ee.pose]
+      method: minmax
+      dims: [0, 1, 2]
+    - type: normalize                             # the vision embeddings: zero mean, unit std
+      features: [container.embedding, camera_centre.embedding]
+      method: standard
+    - type: normalize                             # velocities by their largest absolute value
+      features: [left.commands.arm.ee.velocity]
+      method: maxabs
+      clip: true
+

@@ -1,0 +1,40 @@
+# Robot poses used by ControlRobot (src/rbylearn/control_robot.py).
+# Safety settings are in safety_configs.yaml.
+
+# Initial pose: before a controller starts, the robot moves to this named pose and holds it.
+# A ControlRobot subclass can choose another one with `ControlRobot(initial_pose="zero")`.
+initial_pose: ready
+
+# Time (s) the move to the initial pose takes at least.
+initial_pose_time: 3.0
+
+# Named joint configurations, in degrees. Joints are ordered as in rby1-sdk:
+#   torso:     torso_0 .. torso_5 (bottom to top)
+#   right_arm: right_arm_0 .. right_arm_6 (shoulder to wrist)
+#   left_arm:  left_arm_0 .. left_arm_6
+poses:
+  # Torso bent forward, both arms in front of the robot (rby1-sdk examples, ds-robot-control).
+  ready:
+    torso: [0.0, 45.0, -90.0, 45.0, 0.0, 0.0]
+    right_arm: [0.0, -5.0, 0.0, -120.0, 0.0, 40.0, 0.0]
+    left_arm: [0.0, 5.0, 0.0, -120.0, 0.0, 40.0, 0.0]
+
+  # Insertion task (scenes/insertion_vision.xml, datasets/insertion_vision): the right hand holds the container
+  # still, its opening where the rod (left hand) ends in the demonstrations; the left arm as in "ready".
+  # (The right arm's joints put the hand there on rby1a_1.0, our robot's version.)
+  insertion:
+    torso: [0.0, 45.0, -90.0, 45.0, 0.0, 0.0]
+    right_arm: [-50.7, -32.5, 61.7, -103.3, -4.4, 61.7, 61.7]
+    left_arm: [0.0, 5.0, 0.0, -120.0, 0.0, 40.0, 0.0]
+
+  # Upright torso, elbows bent (rby1-sdk examples 24 and 33, "pre-control pose").
+  upright:
+    torso: [0.0, 5.73, -11.46, 5.73, 0.0, 0.0]
+    right_arm: [11.46, -11.46, 0.0, -57.3, 0.0, 40.11, 0.0]
+    left_arm: [11.46, 11.46, 0.0, -57.3, 0.0, 40.11, 0.0]
+
+  # All joints at zero: upright torso, arms hanging straight down.
+  zero:
+    torso: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+    right_arm: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+    left_arm: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]

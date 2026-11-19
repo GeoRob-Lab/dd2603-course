@@ -1,0 +1,307 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{TITLE}}</title>
+{{PLOTLY}}
+<style>
+  :root {
+    --bg: #f6f6f4; --panel: #ffffff; --text: #1d1d1f; --muted: #7a7a80; --line: #e4e4e0; --accent: #2f6fde;
+    --chip: #efefec; --chip-on: #1d1d1f; --chip-on-text: #ffffff; --grid: #ececea; --hd: 60px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #141416; --panel: #1c1c1f; --text: #ececee; --muted: #8d8d94; --line: #2c2c30; --accent: #6c9cff;
+      --chip: #2a2a2e; --chip-on: #ececee; --chip-on-text: #141416; --grid: #2a2a2e;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 13px/1.4 -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", sans-serif; }
+  header { display: flex; align-items: center; gap: 24px; padding: 0 20px; height: var(--hd); border-bottom: 1px solid var(--line); background: var(--panel); position: sticky; top: 0; z-index: 2; }
+  header h1 { font-size: 15px; font-weight: 600; margin: 0; letter-spacing: -0.01em; }
+  header .sub { color: var(--muted); }
+  main { display: grid; grid-template-columns: 260px minmax(0, 1fr); min-height: calc(100vh - var(--hd)); }
+  aside { border-right: 1px solid var(--line); padding: 16px; overflow-y: auto; max-height: calc(100vh - var(--hd)); position: sticky; top: var(--hd); background: var(--panel); }
+  aside h2 { font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); margin: 18px 0 8px; font-weight: 600; display: flex; justify-content: space-between; align-items: center; }
+  aside h2:first-child { margin-top: 0; }
+  aside h2 span { text-transform: none; letter-spacing: 0; font-weight: 400; cursor: pointer; }
+  aside h2 span:hover { color: var(--text); }
+  .eps { max-height: 38vh; overflow-y: auto; margin: 0 -4px; padding: 0 4px; }
+  .eps label { display: flex; align-items: center; gap: 8px; padding: 2px 4px; border-radius: 6px; cursor: pointer; }
+  .eps label:hover { background: var(--chip); }
+  .eps label.focus { background: var(--chip); font-weight: 600; }
+  .eps .dot { width: 9px; height: 9px; border-radius: 50%; flex: none; }
+  .eps .tag { color: var(--muted); margin-left: auto; font-size: 11px; }
+  .eps .group { color: var(--muted); font-size: 11px; margin: 8px 4px 2px; }
+  .eps.single input { display: none; }
+  .eps.single label.nodetail { opacity: 0.4; }
+  aside h2 span.plain { cursor: default; }
+  #epshint { font-size: 11px; margin: -4px 0 6px; padding: 0; }
+  .chips { display: flex; flex-wrap: wrap; gap: 4px; }
+  .chip { border: 0; background: var(--chip); color: var(--text); padding: 3px 9px; border-radius: 999px; font: inherit; font-size: 12px; cursor: pointer; }
+  .chip.on { background: var(--chip-on); color: var(--chip-on-text); }
+  section { padding: 16px 20px; display: none; }
+  section.on { display: block; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 8px; }
+  .row { display: flex; align-items: center; gap: 12px; margin: 10px 2px; color: var(--muted); }
+  input[type=range] { flex: 1; accent-color: var(--accent); }
+  .cams { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; }
+  .cams figure { margin: 0; }
+  .cams img { width: 100%; border-radius: 8px; display: block; background: var(--chip); }
+  .cams figcaption { color: var(--muted); font-size: 11px; margin-top: 4px; }
+  .empty { color: var(--muted); padding: 40px; text-align: center; }
+  .above { height: calc(100vh - var(--hd) - 32px); min-height: 520px; display: grid; grid-template-rows: minmax(0, 1fr) auto auto; gap: 12px; margin-bottom: 12px; }
+  .stage { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); gap: 12px; min-height: 0; }
+  .stage > .card { display: flex; flex-direction: column; min-height: 0; }
+  .cloudbox { flex: 1; min-height: 0; }
+  .stage figure { margin: 0; }
+  .sim { position: relative; }
+  .sim { display: flex; align-items: center; justify-content: center; min-height: 0; overflow: hidden; }
+  .sim img { width: 100%; height: 100%; display: block; border-radius: 8px; object-fit: contain; }
+  .sim .t { position: absolute; left: 16px; top: 14px; background: rgba(0,0,0,.55); color: #fff; font: 600 12px ui-monospace, Menlo, monospace; padding: 3px 8px; border-radius: 6px; }
+  .side { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+  .side figure { position: relative; margin: 0; }
+  .side img { width: 100%; height: clamp(90px, 19vh, 240px); object-fit: cover; display: block; border-radius: 8px; background: var(--chip); }
+  .side figcaption { position: absolute; left: 6px; bottom: 6px; background: rgba(0,0,0,.55); color: #fff; font-size: 10px; padding: 1px 6px; border-radius: 4px; }
+  .transport { display: flex; align-items: center; gap: 6px; padding: 8px 12px; }
+  .transport button { border: 0; background: var(--chip); color: var(--text); width: 32px; height: 30px; border-radius: 8px; cursor: pointer; font-size: 13px; flex: none; }
+  .transport button.play { background: var(--accent); color: #fff; width: 40px; }
+  .transport .time { font: 12px ui-monospace, Menlo, monospace; color: var(--muted); min-width: 104px; text-align: right; }
+  .transport select { border: 0; background: var(--chip); color: var(--text); font: inherit; padding: 5px 6px; border-radius: 8px; }
+  .lower { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr); gap: 12px; }
+  .ttl { font-weight: 600; padding: 4px 8px; }
+  .hint { color: var(--muted); font-size: 11px; padding: 0 8px 4px; }
+  @media (max-width: 1100px) { main { grid-template-columns: 220px minmax(0, 1fr); } }
+  @media (max-width: 900px) { main { grid-template-columns: 1fr; } main > div { order: -1; } aside { position: static; max-height: none; border-right: 0; border-top: 1px solid var(--line); } .above { height: auto; min-height: 0; } .stage { grid-template-columns: 1fr; } .sim img { height: auto; } .cloudbox { height: 320px; flex: none; } header h1 { font-size: 13px; } header .sub { display: none; } }
+  @media (max-width: 560px) { .side { grid-template-columns: 1fr; } .side img { height: auto; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>{{TITLE}}</h1><span class="sub" id="sub"></span>
+</header>
+<main>
+  <aside>
+    <h2><span class="plain">Rollout to replay</span></h2>
+    <div class="hint" id="epshint">Click one to play it back</div>
+    <div class="eps single" id="eps"></div>
+    <div><h2>Signals</h2><div class="chips" id="features"></div></div>
+  </aside>
+  <div>
+    <section id="replay" class="on">
+      <div id="replaybody">
+        <div class="above">
+        <div class="stage">
+          <figure class="sim card"><img id="simimg" alt=""><span class="t" id="simt"></span></figure>
+          <div class="card"><div class="ttl" id="cloudtitle">Point cloud and hand</div><div id="camcloud" class="cloudbox"></div></div>
+        </div>
+        <div class="side" id="cams"></div>
+        <div class="transport card">
+          <button id="tostart" title="Start (Home)">⏮</button><button id="back" title="Back one step (←)">◀︎</button>
+          <button id="play" class="play" title="Play / pause (space)">▶</button><button id="fwd" title="Forward one step (→)">▶︎</button>
+          <input type="range" id="time" min="0" max="1" step="0.01" value="0"><span class="time" id="timelabel"></span>
+          <select id="speed" title="Speed"><option value="0.25">¼×</option><option value="0.5">½×</option><option value="1" selected>1×</option><option value="2">2×</option></select>
+        </div>
+        </div>
+        <div class="card"><div class="ttl">Signals</div><div class="hint">Click a plot to jump there. Pick the signals under Features.</div><div id="replaysignals"></div></div>
+      </div>
+      <div class="empty" id="replayempty" hidden>No replay for this rollout: pick one that is not faded (make the report with a larger --detail for more)</div>
+    </section>
+  </div>
+</main>
+<script>
+const DATA = {{DATA}};
+const PALETTE = ["#2f6fde", "#e8590c", "#2b9e5a", "#c2255c", "#7048e8", "#0c8599", "#d9a400", "#5c7080", "#f06595", "#82c91e"];
+const DIMS = { pose: ["x", "y", "z", "qw", "qx", "qy", "qz"], velocity: ["vx", "vy", "vz", "wx", "wy", "wz"] };
+const DIM_COLOURS = ["#2f6fde", "#e8590c", "#2b9e5a", "#7048e8", "#c2255c", "#0c8599", "#d9a400", "#5c7080", "#f06595", "#82c91e", "#495057", "#ae3ec9", "#1098ad", "#f76707", "#37b24d", "#1c7ed6"];
+const css = name => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+
+// Episodes: "<folder index>/<episode name>"
+const episodes = [];
+DATA.folders.forEach((folder, f) => Object.entries(folder.episodes).forEach(([name, e]) => episodes.push({ key: `${f}/${name}`, f, name, e })));
+episodes.forEach((ep, i) => ep.colour = PALETTE[i % PALETTE.length]);
+const state = { tab: "replay", focus: (episodes.find(e => (e.e.replay.t || []).length) || episodes.find(e => Object.keys(e.e.clouds).length || Object.keys(e.e.images).length) || episodes[0] || {}).key,
+                features: new Set() };
+const allFeatures = [...new Set(episodes.flatMap(e => Object.keys(e.e.signals)))].sort();
+// The signals shown at first: the hand poses that move (more than 3 cm in some episode), and the grippers that move
+const extent = f => Math.max(...episodes.map(e => e.e.paths[f] ? Math.max(...e.e.paths[f].map(v => Math.max(...v) - Math.min(...v))) : 0));
+const spread = f => Math.max(...episodes.map(e => e.e.signals[f] ? Math.max(...e.e.signals[f].v.map(v => Math.max(...v) - Math.min(...v))) : 0));
+allFeatures.filter(f => f.endsWith(".ee.pose") && !f.includes("commands") && extent(f) > 0.03 || /gripper\.closing$/.test(f) && spread(f) > 0.2).slice(0, 3).forEach(f => state.features.add(f));
+if (!state.features.size && allFeatures.length) state.features.add(allFeatures[0]);
+document.getElementById("sub").textContent = `${episodes.length} rollouts` + (DATA.folders.map(f => f.task).filter(Boolean).length ? " · " + DATA.folders.map(f => f.task).filter(Boolean).join(", ") : "");
+const byKey = key => episodes.find(e => e.key === key);
+
+function layoutBase() {
+  return { paper_bgcolor: "rgba(0,0,0,0)", plot_bgcolor: "rgba(0,0,0,0)", font: { family: "-apple-system, Inter, sans-serif", size: 11, color: css("--text") },
+           margin: { l: 50, r: 10, t: 10, b: 30 }, showlegend: false, hoverlabel: { font: { size: 11 } } };
+}
+
+// ---- Sidebar
+function chips(id, items, set, label = x => x) {
+  const box = document.getElementById(id); box.innerHTML = "";
+  items.forEach(item => {
+    const b = document.createElement("button"); b.className = "chip" + (set.has(item) ? " on" : ""); b.textContent = label(item);
+    b.onclick = () => { set.has(item) ? set.delete(item) : set.add(item); b.classList.toggle("on"); draw(); };
+    box.appendChild(b);
+  });
+}
+function sidebar() {
+  const box = document.getElementById("eps"); box.innerHTML = "";
+  DATA.folders.forEach((folder, f) => {
+    if (DATA.folders.length > 1) { const g = document.createElement("div"); g.className = "group"; g.textContent = folder.name; box.appendChild(g); }
+    episodes.filter(e => e.f === f).forEach(ep => {
+      const detail = (ep.e.replay.t || []).length || Object.keys(ep.e.images).length || Object.keys(ep.e.clouds).length;
+      const l = document.createElement("label"); l.className = (ep.key === state.focus ? "focus" : "") + (detail ? "" : " nodetail");
+      l.title = detail ? "Has a replay, camera images and point clouds" : "Paths and signals only (no replay: see --detail)";
+      const source = ep.e.meta.source_demo !== undefined ? `<span title="Made from real demonstration ${ep.e.meta.source_demo}">from ${ep.e.meta.source_demo}</span>` : "";
+      l.innerHTML = `<span class="dot" style="background:${ep.colour}"></span>${ep.name.replace("_", " ")}<span class="tag">${source}</span>`;
+      l.onclick = ev => { ev.preventDefault(); state.focus = ep.key; sidebar(); pause(); draw(); };
+      box.appendChild(l);
+    });
+  });
+}
+// ---- Helpers
+const short = name => name.replace(".commands.arm.ee.pose", " command").replace(".ee.pose", " hand").replace(".pose", "");
+function cloudOf(ep) { const name = ep && Object.keys(ep.e.clouds)[0]; return name ? ep.e.clouds[name] : null; }
+function dimNames(feature, n) {
+  if (feature.endsWith(".pose") && n === 7) return DIMS.pose;
+  if (feature.endsWith(".velocity") && n === 6) return DIMS.velocity;
+  return n === 1 ? [""] : [...Array(n).keys()].map(i => `${i + 1}`);
+}
+// ---- Replay: one moment of the focused episode in every view; play it, step it or drag it
+const replay = { t: 0, playing: false, last: null, ep: null, cloudKey: null, timer: null };
+const lastAt = (times, t) => { let lo = 0, hi = times.length - 1; if (!times.length) return -1; if (t < times[0]) return 0;
+  while (lo < hi) { const mid = (lo + hi + 1) >> 1; times[mid] <= t ? lo = mid : hi = mid - 1; } return lo; };
+function span(ep) {
+  const all = [ep.e.replay.t || [], ...Object.values(ep.e.images).map(c => c.t), ...Object.values(ep.e.signals).map(s => s.t)].filter(a => a.length);
+  return all.length ? [Math.min(...all.map(a => a[0])), Math.max(...all.map(a => a[a.length - 1]))] : [0, 0];
+}
+function handOf(ep) {  // the hand that moves the most
+  const hands = Object.keys(ep.e.signals).filter(f => f.endsWith(".ee.pose") && !f.includes("commands"));
+  const moved = f => Math.max(...ep.e.signals[f].v.slice(0, 3).map(v => Math.max(...v) - Math.min(...v)));
+  return hands.sort((a, b) => moved(b) - moved(a))[0];
+}
+function drawReplay() {  // the whole view, for a new episode or features
+  const ep = byKey(state.focus);
+  const has = ep && ((ep.e.replay.t || []).length || Object.keys(ep.e.images).length);
+  document.getElementById("replaybody").hidden = !has; document.getElementById("replayempty").hidden = !!has;
+  if (!has) { pause(); return; }
+  if (replay.ep !== ep.key) { replay.ep = ep.key; replay.t = span(ep)[0]; replay.cloudKey = null; }
+  const [t0, t1] = span(ep), slider = document.getElementById("time");
+  slider.min = t0; slider.max = t1;
+  document.getElementById("simimg").parentElement.hidden = !(ep.e.replay.t || []).length;
+  document.getElementById("cams").innerHTML = Object.keys(ep.e.images).map(name => `<figure><img data-cam="${name}" alt=""><figcaption>${name.replace("camera_", "")}</figcaption></figure>`).join("");
+  const box = document.getElementById("replaysignals"); box.innerHTML = "";
+  [...state.features].sort().filter(f => ep.e.signals[f]).forEach(feature => {
+    const s = ep.e.signals[feature], names = dimNames(feature, s.v.length);
+    const title = document.createElement("div"); title.className = "hint"; title.style.paddingTop = "6px"; title.textContent = feature;
+    const div = document.createElement("div"); div.style.height = "150px"; div.className = "sig"; box.append(title, div);
+    Plotly.newPlot(div, s.v.map((v, d) => ({ type: "scatter", mode: "lines", x: s.t, y: v, name: names[d], line: { color: DIM_COLOURS[d % DIM_COLOURS.length], width: 1.6 },
+      hovertemplate: `${names[d]} %{y:.4g}<extra></extra>` })),
+      { ...layoutBase(), showlegend: names.length > 1, legend: { x: 1.01, xanchor: "left", y: 1, font: { size: 10 } }, hovermode: "x",
+        xaxis: { gridcolor: css("--grid"), zeroline: false, color: css("--muted"), range: [t0, t1] }, yaxis: { gridcolor: css("--grid"), zeroline: false, color: css("--muted") },
+        margin: { l: 44, r: names.length > 1 ? 40 : 8, t: 4, b: 22 },
+        shapes: [{ type: "line", xref: "x", yref: "paper", x0: replay.t, x1: replay.t, y0: 0, y1: 1, line: { color: css("--text"), width: 1.5 } }] },
+      { displaylogo: false, responsive: true, displayModeBar: false });
+    div.on("plotly_click", ev => { if (ev.points.length) seek(ev.points[0].x); });
+  });
+  show();
+}
+function show() {  // every view at replay.t
+  const ep = byKey(state.focus); if (!ep) return;
+  const t = replay.t, [t0, t1] = span(ep);
+  document.getElementById("time").value = t;
+  document.getElementById("timelabel").textContent = `${t.toFixed(1)} / ${t1.toFixed(1)} s`;
+  document.getElementById("simt").textContent = `${t.toFixed(1)} s`;
+  const r = ep.e.replay;
+  if ((r.t || []).length) { const src = r.src[lastAt(r.t, t)], img = document.getElementById("simimg"); if (img.getAttribute("src") !== src) img.src = src; }
+  document.querySelectorAll("#cams img").forEach(img => { const c = ep.e.images[img.dataset.cam], src = c.src[lastAt(c.t, t)]; if (img.getAttribute("src") !== src) img.src = src; });
+  document.querySelectorAll("#replaysignals .sig").forEach(div => div.layout && Plotly.relayout(div, { "shapes[0].x0": t, "shapes[0].x1": t }));
+  // The point cloud and the hand: redrawn only when either moves on
+  // With a rod (the insertion task): the rod as it is seen, and its tip's path (the end that goes into the container),
+  // rather than the hand's, which stops short of the container
+  const rods = r.rods ? Object.entries(r.rods) : [], rod = rods.length ? rods[0][1] : null, ri = rod ? lastAt(r.t, t) : -1;
+  const cloud = cloudOf(ep), hand = rod ? null : handOf(ep), h = hand ? ep.e.signals[hand] : null;
+  const j = cloud ? lastAt(cloud.t, t) : -1, k = h ? lastAt(h.t, t) : -1, key = `${ep.key}/${j}/${k}/${ri}`;
+  document.getElementById("cloudtitle").textContent = rod ? `Point cloud and ${rods[0][0]}` : "Point cloud and hand";
+  if (key === replay.cloudKey) return;
+  replay.cloudKey = key;
+  const traces = [];
+  if (cloud) traces.push({ type: "scatter3d", mode: "markers", x: cloud.xyz[j][0], y: cloud.xyz[j][1], z: cloud.xyz[j][2], marker: { size: 2.5, color: cloud.xyz[j][2], colorscale: "Blues", reversescale: true }, hoverinfo: "skip" });
+  if (rod) {
+    if (ep.rodTip === undefined) {  // the end nearer the container (the cloud's centre) at the end
+      const last = rod[rod.length - 1], c = cloud ? [0, 1, 2].map(d => cloud.xyz[cloud.xyz.length - 1][d].reduce((s, v) => s + v, 0) / cloud.xyz[cloud.xyz.length - 1][d].length) : null;
+      const dist = o => c ? Math.hypot(last[o] - c[0], last[o + 1] - c[1], last[o + 2] - c[2]) : o;
+      ep.rodTip = dist(0) <= dist(3) ? 0 : 3;
+    }
+    const o = ep.rodTip, tip = d => rod.map(e => e[o + d]), upto = d => tip(d).slice(0, ri + 1), now = rod[ri];
+    traces.push({ type: "scatter3d", mode: "lines", x: tip(0), y: tip(1), z: tip(2), line: { color: css("--muted"), width: 2 }, hoverinfo: "skip" });
+    traces.push({ type: "scatter3d", mode: "lines", x: upto(0), y: upto(1), z: upto(2), line: { color: ep.colour, width: 5 }, hoverinfo: "skip" });
+    traces.push({ type: "scatter3d", mode: "lines+markers", x: [now[0], now[3]], y: [now[1], now[4]], z: [now[2], now[5]],
+      line: { color: "#d64545", width: 9 }, marker: { size: [o === 0 ? 5 : 0, o === 3 ? 5 : 0], color: "#d64545" }, hoverinfo: "text", hovertext: rods[0][0] });
+  }
+  if (h) {
+    traces.push({ type: "scatter3d", mode: "lines", x: h.v[0], y: h.v[1], z: h.v[2], line: { color: css("--muted"), width: 2 }, hoverinfo: "skip" });
+    traces.push({ type: "scatter3d", mode: "lines", x: h.v[0].slice(0, k + 1), y: h.v[1].slice(0, k + 1), z: h.v[2].slice(0, k + 1), line: { color: ep.colour, width: 5 }, hoverinfo: "skip" });
+    traces.push({ type: "scatter3d", mode: "markers", x: [h.v[0][k]], y: [h.v[1][k]], z: [h.v[2][k]], marker: { size: 6, color: ep.colour }, hoverinfo: "text", hovertext: short(hand) });
+  }
+  // Fixed axes for the whole episode (every cloud and the hand's whole path, plus a margin), so that the view
+  // neither jumps from frame to frame nor cuts anything off
+  if (!ep.cloudBox) {
+    const lo = [Infinity, Infinity, Infinity], hi = [-Infinity, -Infinity, -Infinity];
+    const add = (xs, d) => xs.forEach(v => { if (Number.isFinite(v)) { lo[d] = Math.min(lo[d], v); hi[d] = Math.max(hi[d], v); } });
+    if (cloud) cloud.xyz.forEach(f => [0, 1, 2].forEach(d => add(f[d], d)));
+    if (h) [0, 1, 2].forEach(d => add(h.v[d], d));
+    if (rod) rod.forEach(e => [0, 1, 2].forEach(d => add([e[d], e[d + 3]], d)));
+    const size = Math.max(...[0, 1, 2].map(d => hi[d] - lo[d]), 1e-3), pad = 0.08 * size;
+    ep.cloudBox = [0, 1, 2].map(d => [lo[d] - pad, hi[d] + pad]);
+  }
+  const box = ep.cloudBox, longest = Math.max(...box.map(([a, b]) => b - a));
+  const axis = d => ({ showbackground: false, gridcolor: css("--grid"), color: css("--muted"), title: "", range: box[d] });
+  const camera = document.getElementById("camcloud").layout?.scene?.camera;
+  Plotly.react("camcloud", traces, { ...layoutBase(), margin: { l: 0, r: 0, t: 0, b: 0 }, uirevision: ep.key, showlegend: false,
+    scene: { aspectmode: "manual", aspectratio: { x: (box[0][1] - box[0][0]) / longest, y: (box[1][1] - box[1][0]) / longest, z: (box[2][1] - box[2][0]) / longest },
+             xaxis: axis(0), yaxis: axis(1), zaxis: axis(2), camera: camera || { eye: { x: -1.5, y: -1.3, z: 0.9 } } } }, { displaylogo: false, responsive: true });
+}
+function seek(t) { const ep = byKey(state.focus); if (!ep) return; const [t0, t1] = span(ep); replay.t = Math.min(Math.max(+t, t0), t1); show(); }
+function step(sign) {  // to the next or the previous simulator frame (or camera frame)
+  const ep = byKey(state.focus); if (!ep) return; pause();
+  const times = (ep.e.replay.t || []).length ? ep.e.replay.t : (Object.values(ep.e.images)[0] || { t: [] }).t;
+  const i = lastAt(times, replay.t + 1e-6);
+  seek(times[Math.min(Math.max(i + sign, 0), times.length - 1)] ?? replay.t);
+}
+function play() {
+  const ep = byKey(state.focus); if (!ep) return;
+  if (replay.t >= span(ep)[1] - 1e-6) replay.t = span(ep)[0];
+  replay.playing = true; replay.last = performance.now(); document.getElementById("play").textContent = "❚❚";
+  clearInterval(replay.timer); replay.timer = setInterval(tick, 40);
+}
+function pause() { replay.playing = false; clearInterval(replay.timer); document.getElementById("play").textContent = "▶"; }
+function tick() {
+  const now = performance.now(), ep = byKey(state.focus), end = span(ep)[1];
+  replay.t = Math.min(replay.t + (now - replay.last) / 1000 * +document.getElementById("speed").value, end);
+  replay.last = now; show();
+  if (replay.t >= end) pause();
+}
+document.getElementById("play").onclick = () => replay.playing ? pause() : play();
+document.getElementById("tostart").onclick = () => { pause(); seek(-Infinity); };
+document.getElementById("back").onclick = () => step(-1);
+document.getElementById("fwd").onclick = () => step(1);
+document.getElementById("time").oninput = ev => { pause(); seek(ev.target.value); };
+document.addEventListener("keydown", ev => {
+  if (["SELECT", "TEXTAREA"].includes(ev.target.tagName)) return;
+  if (ev.key === " ") { ev.preventDefault(); replay.playing ? pause() : play(); }
+  else if (ev.key === "ArrowRight") { ev.preventDefault(); step(1); }
+  else if (ev.key === "ArrowLeft") { ev.preventDefault(); step(-1); }
+  else if (ev.key === "Home") { pause(); seek(-Infinity); }
+});
+
+const draw = drawReplay;
+
+sidebar();
+chips("features", allFeatures, state.features);
+draw();
+</script>
+</body>
+</html>

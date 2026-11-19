@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Robot control panel</title>
+<style>
+  :root {
+    --bg: #f6f6f4; --panel: #ffffff; --text: #1d1d1f; --muted: #7a7a80; --line: #e4e4e0; --accent: #2f6fde;
+    --chip: #efefec; --ok: #1f9d55; --bad: #d64545; --warn: #c98a00;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #141416; --panel: #1c1c1f; --text: #ececee; --muted: #8d8d94; --line: #2c2c30; --accent: #6c9cff;
+      --chip: #2a2a2e; --ok: #3ccf7a; --bad: #ff6b6b; --warn: #f0b429;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.45 -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", sans-serif; }
+  .wrap { max-width: 1100px; margin: 0 auto; padding: 24px 24px 32px; }
+  .cols { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 12px; align-items: start; }
+  @media (max-width: 760px) { .cols { grid-template-columns: minmax(0, 1fr); } }
+  h1 { font-size: 17px; margin: 0 0 2px; }
+  .sub { color: var(--muted); font-size: 12px; margin-bottom: 14px; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; margin-bottom: 12px; }
+  .status { display: flex; align-items: center; gap: 10px; }
+  .pill { font-size: 12px; font-weight: 600; padding: 3px 10px; border-radius: 999px; background: var(--chip); text-transform: uppercase; letter-spacing: .04em; }
+  .pill.running { background: var(--accent); color: #fff; }
+  .pill.ready { background: var(--ok); color: #fff; }
+  .pill.holding, .pill.moving { background: var(--warn); color: #fff; }
+  .pill.stopped { background: var(--bad); color: #fff; }
+  .pill.finished { background: var(--text); color: var(--bg); }
+  .msg { margin-top: 8px; min-height: 20px; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  button { font: inherit; font-weight: 600; border: 1px solid var(--line); background: var(--chip); color: var(--text); border-radius: 10px; padding: 11px 12px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: transform .05s, background .15s, opacity .15s; width: 100%; }
+  button:hover:not(:disabled) { border-color: var(--accent); }
+  button:active:not(:disabled) { transform: scale(.98); }
+  button:disabled { opacity: .38; cursor: default; }
+  button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  button.ok { color: var(--ok); } button.bad { color: var(--bad); }
+  .row { display: flex; gap: 8px; align-items: center; }
+  select, input[type=text] { font: inherit; padding: 10px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); color: var(--text); }
+  input[type=text] { width: 130px; }
+  input[type=number] { font: inherit; width: 90px; padding: 10px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); color: var(--text); }
+  .help { color: var(--muted); font-size: 12px; margin: 4px 2px 0; }
+  details summary { cursor: pointer; color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .06em; font-weight: 600; }
+  dl { display: grid; grid-template-columns: max-content 1fr; gap: 4px 12px; margin: 10px 0 0; font-size: 13px; }
+  dt { font-weight: 600; } dd { margin: 0; color: var(--muted); }
+  .events { font: 12px/1.6 ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--muted); height: 220px; overflow-y: auto; white-space: pre-wrap; margin-top: 8px; padding: 8px 10px; background: var(--bg); border: 1px solid var(--line); border-radius: 8px; }
+  h2 { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 0 0 8px; font-weight: 600; }
+  .gone { display: none !important; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1 id="title">Robot control panel</h1>
+  <div class="sub" id="sub">Connecting…</div>
+
+  <div class="cols">
+    <div>
+      <div class="card">
+        <div class="status"><span class="pill" id="phase">…</span><span id="rollout"></span></div>
+        <div class="msg" id="message"></div>
+      </div>
+
+      <div class="card">
+        <h2>Rollout</h2>
+        <div class="grid">
+          <button class="primary" data-a="start" id="b-start">▶ Start</button>
+          <button data-a="hold" id="b-hold">❚❚ Hold</button>
+          <button data-a="restart" id="b-restart">↺ Back to start</button>
+          <button data-a="quit" id="b-quit">■ Quit</button>
+        </div>
+        <div class="row" style="margin-top:8px" id="demo-row">
+          <input type="number" id="demo" min="0" step="1" placeholder="demo">
+          <button data-a="demo" id="b-demo">Go to this demo's start</button>
+        </div>
+        <div class="row" style="margin-top:8px" id="series-row">
+          <select id="series"><option value="validation">validation demos</option><option value="all">all demos</option><option value="list">these demos…</option></select>
+          <input type="text" id="series-list" placeholder="e.g. 3 7 12" class="gone">
+          <button data-a="run_demos" id="b-series">▶▶ Run them one after the other</button>
+        </div>
+      </div>
+
+      <div class="card" id="grip-card">
+        <h2>Grippers</h2>
+        <div class="grid" id="grippers"></div>
+      </div>
+    </div>
+
+    <div>
+      <div class="card">
+        <h2>What happened</h2>
+        <div class="events" id="events"></div>
+      </div>
+
+      <div class="card">
+        <details open>
+          <summary>What the buttons do</summary>
+          <dl id="help"></dl>
+        </details>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+// Which buttons each phase allows.
+const ALLOWED = {
+  starting: [], moving: ["quit"],
+  ready: ["start", "restart", "demo", "run_demos", "quit", "gripper"],
+  running: ["hold", "quit"],
+  holding: ["start", "restart", "demo", "run_demos", "quit", "gripper"],
+  stopped: ["restart", "demo", "run_demos", "quit", "gripper"],
+  finished: ["restart", "demo", "run_demos", "quit", "gripper"],
+  ended: [],
+};
+const LABEL = { "start": "▶ Start", "hold": "❚❚ Hold", "restart": "↺ Back to start", "demo": "Go to this demo's start", "run_demos": "▶▶ Run them one after the other",
+"gripper": "Gripper", "quit": "■ Quit" };
+let state = null, built = false;
+
+async function send(action, value) {
+  try { await fetch("/action", { method: "POST", body: JSON.stringify({ action, value }) }); } catch (e) {}
+  poll();
+}
+
+function build() {
+  const help = document.getElementById("help");
+  help.innerHTML = "";
+  for (const [b, text] of Object.entries(state.buttons)) {
+    help.insertAdjacentHTML("beforeend", `<dt>${LABEL[b]}</dt><dd>${text}</dd>`);
+  }
+  const g = document.getElementById("grippers");
+  g.innerHTML = "";
+  for (const arm of state.arms) {
+    for (const [how, label] of [["open", "Open"], ["close", "Close"]]) {
+      const el = document.createElement("button");
+      el.textContent = `${label} ${arm}`;
+      el.dataset.a = "gripper"; el.dataset.v = JSON.stringify({ arm, how });
+      g.appendChild(el);
+    }
+  }
+  for (const id of ["b-start", "b-hold", "b-restart", "b-quit", "b-demo", "b-series"]) {
+    const el = document.getElementById(id);
+    if (!(el.dataset.a in state.buttons)) el.classList.add("gone");
+  }
+  document.getElementById("demo-row").classList.toggle("gone", !("demo" in state.buttons));
+  document.getElementById("series-row").classList.toggle("gone", !("run_demos" in state.buttons));
+  document.getElementById("series").onchange = e => document.getElementById("series-list").classList.toggle("gone", e.target.value !== "list");
+  document.getElementById("grip-card").classList.toggle("gone", !state.arms.length || !("gripper" in state.buttons));
+  document.querySelectorAll("button[data-a]").forEach(el => el.onclick = () => {
+    let v = el.dataset.v ? JSON.parse(el.dataset.v) : null;
+    if (el.dataset.a === "demo") {
+      const n = document.getElementById("demo").value;
+      if (n === "") { document.getElementById("demo").focus(); return; }
+      v = parseInt(n, 10);
+    }
+    if (el.dataset.a === "run_demos") {
+      const s = document.getElementById("series").value;
+      v = s === "list" ? document.getElementById("series-list").value.trim() : s;
+      if (!v) { document.getElementById("series-list").focus(); return; }
+    }
+    send(el.dataset.a, v);
+  });
+  built = true;
+}
+
+function render() {
+  if (!built) build();
+  document.title = `${state.title} · ${state.phase}`;
+  document.getElementById("title").textContent = state.title;
+  document.getElementById("sub").textContent = "Control panel · this page follows the controller live";
+  const p = document.getElementById("phase");
+  p.textContent = state.phase; p.className = "pill " + state.phase;
+  document.getElementById("rollout").textContent = state.rollout ? `Rollout ${state.rollout}` + (state.demo != null ? ` · demo ${state.demo}` : "") : (state.demo != null ? `demo ${state.demo}` : "");
+  document.getElementById("message").textContent = state.message || "";
+  const allowed = ALLOWED[state.phase] || [];
+  document.querySelectorAll("button[data-a]").forEach(el => el.disabled = !allowed.includes(el.dataset.a));
+  document.getElementById("events").textContent = state.events.join("\n");
+}
+
+async function poll() {
+  try {
+    const r = await fetch("/state", { cache: "no-store" });
+    state = await r.json();
+    render();
+  } catch (e) {
+    document.getElementById("sub").textContent = "The controller is not running (this page reconnects by itself).";
+    document.querySelectorAll("button").forEach(el => el.disabled = true);
+  }
+}
+poll();
+setInterval(poll, 300);
+document.addEventListener("keydown", e => {   // keyboard shortcuts while this page has the focus
+  if (e.target.tagName === "INPUT") return;
+  const key = { " ": state && state.phase === "running" ? "hold" : "start", "r": "restart" }[e.key];
+  if (key && state && (ALLOWED[state.phase] || []).includes(key)) { e.preventDefault(); send(key); }
+});
+</script>
+</body>
+</html>
