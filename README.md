@@ -5,7 +5,7 @@ This repository contains the assignments and the course project of DD2603: the n
 | | Topic | Instructions |
 |---|---|---|
 | Programming Assignment 1 | Manifold geometry for robot poses | [assignments/assignment1](assignments/assignment1/README.md) |
-| Programming Assignment 2 | *published later* | |
+| Programming Assignment 2 | Statistics, Optimisation and Learning on manifolds | [assignments/assignment2](assignments/assignment2/README.md) |
 | Project | *published later* | [project](project/README.md) |
 
 ## How the assignments work
