@@ -186,7 +186,7 @@
 <pre><code>python scripts/run_policy.py --demo 15      <span class="c"># or add demo: 15 under run: in student/project.yaml</span></code></pre>
       <div class="see"><b>You should see</b> the right arm move the container to where it was in demo 15 (one of its 5 validation demos), then (after <b>▶ Start</b>) the left hand bring the rod into it. To try another demo, type its number in the panel's demo box. To watch it rollout for multiple demos in a row, pick them under <b>▶▶ Run them one after the other</b> (e.g. its validation demos) and leave it running.</div>
       <p>To score it, run it from every validation demo (demos 30 to 39, from the dataset's <code>split.json</code>) and count how often the rod ends in the container. The settings are under <code>evaluate:</code>.</p>
-<pre><code>python scripts/evaluate_insertion_sim.py</code></pre>
+<pre><code>python scripts/evaluate_sim.py</code></pre>
       <div class="see"><b>You should see</b> one line per demo, inside or outside and how deep, then <code>Rod in the container in …% of … runs</code>.</div>
     </section>
 
@@ -207,7 +207,7 @@
       </ul>
       <p>Of course you are free to write more code within <code>student/</code> as needed by your implementation.</p>
       <p>Remember: only <code>student/</code> is handed in, so any changes you make to the code outsie <code>student/</code> will be used once you submit your code (the notice at the top of this page).</p>
-      <p>Then the process is just as explained above: <code>python scripts/train.py</code>, <code>python scripts/run_policy.py</code>, <code>python scripts/evaluate_insertion_sim.py</code>, and check the report to see what happened.</p>
+      <p>Then the process is just as explained above: <code>python scripts/train.py</code>, <code>python scripts/run_policy.py</code>, <code>python scripts/evaluate_sim.py</code>, and check the report to see what happened.</p>
     </section>    
 
     <section id="interface">
@@ -258,7 +258,7 @@ q = x[..., s["left.ee.pose"]][..., 3:7]      <span class="c"># the hand's unit q
         <tr><td><code>student/project.yaml</code><span class="tag">your settings</span></td><td>Every step's settings, in one file</td></tr>
         <tr><td><code>student/my_policy.py</code><span class="tag">your policy</span></td><td>Your own policy: the three methods to fill in</td></tr>
         <tr><td><code>student/example_policy.py</code></td><td>A complete example policy (a small MLP), the one trained until you switch to yours</td></tr>
-        <tr><td><code>scripts/</code></td><td>The commands: <code>train.py</code> trains, <code>run_policy.py</code> runs a policy on the robot, <code>evaluate_insertion_sim.py</code> scores it in the simulator</td></tr>
+        <tr><td><code>scripts/</code></td><td>The commands: <code>train.py</code> trains, <code>run_policy.py</code> runs a policy on the robot, <code>evaluate_sim.py</code> scores it in the simulator</td></tr>
         <tr><td><code>policies/</code></td><td>Your trained policies (<code>policies/{policy_name}/</code>), next to the course's <code>policies/pretrained/</code></td></tr>
         <tr><td><code>configs/defaults.yaml</code></td><td>The course's defaults: any setting you leave out of <code>student/project.yaml</code> comes from here, and so does the preprocessing. Don't edit it</td></tr>
         <tr><td><code>visualization/</code></td><td>Plots and the HTML report</td></tr>
