@@ -17,8 +17,10 @@ that hand's fingers closed on them. A free one (e.g. the rod) is held as any gra
 open; a fixed one (e.g. the container) stays on the hand, the fingers closed around it. {"cmd": "regrasp"} puts them
 all back in their hands, the fingers closed on them again (at each new start of a task).
 
-Two more requests, for the simulator only: {"cmd": "place_object", "name": name, "pose": [x, y, z, qw, qx, qy, qz]}
-(puts an object there, at rest, in the robot's base frame) and {"cmd": "objects"} -> {"ok": True, "poses": {name: pose}}.
+More requests, for the simulator only: {"cmd": "place_object", "name": name, "pose": [x, y, z, qw, qx, qy, qz]}
+(puts an object there, at rest, in the robot's base frame), {"cmd": "objects"} -> {"ok": True, "poses": {name: pose}},
+{"cmd": "set_joints", "q": [...]} (puts the robot's joints there at once, at rest, holding them: a faster reset than
+moving there) and {"cmd": "scene"} -> {"ok": True, "scene": the scene file the simulator was started with}.
 
 Ported from the vision project's simulator (simulator/gripper.py), for any graspable object instead of its spoon.
 """
@@ -323,7 +325,20 @@ def object_poses(sim, names) -> dict:
     return poses
 
 
-def handle_command(gripper: SimGripper, request: dict, lock=None) -> dict:
+def set_joints(sim, control, q) -> None:
+    """The robot's joints (all of them, in the robot's order) at q at once, at rest; the robot holds them there."""
+    q = np.asarray(q, dtype=float)
+    if q.shape != (len(sim.qpos_adr),):
+        raise ValueError(f"expected {len(sim.qpos_adr)} joint positions, got {q.shape}")
+    control.cancel()  # (a command still running would pull the joints back)
+    sim.data.qpos[sim.qpos_adr] = q
+    sim.data.qvel[sim.dof_adr] = 0.0
+    mujoco.mj_forward(sim.model, sim.data)
+    control.hold_current_pose()
+    sim.set_joint_targets(q)
+
+
+def handle_command(gripper: SimGripper, request: dict, lock=None, control=None) -> dict:
     """
     Description
     -----------
@@ -337,6 +352,8 @@ def handle_command(gripper: SimGripper, request: dict, lock=None) -> dict:
         The request.
     lock : threading.Lock
         Held while an object is moved (the simulation's lock).
+    control : rbylearn.sim.control.ControlManager, optional
+        The robot's commands (for set_joints).
 
     Returns
     -------
@@ -371,16 +388,24 @@ def handle_command(gripper: SimGripper, request: dict, lock=None) -> dict:
                         gripper.let_go(arm)
                 place_object(gripper.sim, request["name"], request["pose"])
             return {"ok": True}
+        if command == "set_joints":
+            if control is None:
+                raise ValueError("set_joints needs the simulator's control manager")
+            with lock or threading.Lock():
+                set_joints(gripper.sim, control, request["q"])
+            return {"ok": True}
         if command == "objects":
             with lock or threading.Lock():
                 return {"ok": True, "poses": object_poses(gripper.sim, gripper.objects)}
-        raise ValueError(f"unknown command {command!r}: ping, set, state, place_object, objects or regrasp")
+        if command == "scene":
+            return {"ok": True, "scene": getattr(gripper, "scene", None)}
+        raise ValueError(f"unknown command {command!r}: ping, set, state, place_object, objects, set_joints, scene or regrasp")
     except Exception as error:
         logging.error(f"request {request!r} failed: {error!r}")
         return {"ok": False, "error": repr(error)}
 
 
-def serve(gripper: SimGripper, port: int, lock=None) -> threading.Thread:
+def serve(gripper: SimGripper, port: int, lock=None, control=None) -> threading.Thread:
     """
     Description
     -----------
@@ -394,6 +419,8 @@ def serve(gripper: SimGripper, port: int, lock=None) -> threading.Thread:
         The port (the real server's: 5558).
     lock : threading.Lock
         The simulation's lock (see handle_command).
+    control : rbylearn.sim.control.ControlManager, optional
+        The robot's commands (see handle_command).
 
     Returns
     -------
@@ -408,7 +435,7 @@ def serve(gripper: SimGripper, port: int, lock=None) -> threading.Thread:
 
     def loop():
         while True:
-            socket.send(msgpack.packb(handle_command(gripper, msgpack.unpackb(socket.recv(), raw=False), lock)))
+            socket.send(msgpack.packb(handle_command(gripper, msgpack.unpackb(socket.recv(), raw=False), lock, control)))
 
     thread = threading.Thread(target=loop, name="sim_gripper_server", daemon=True)
     thread.start()

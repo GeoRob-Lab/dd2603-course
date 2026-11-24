@@ -4,10 +4,15 @@ Run an insertion policy in the simulator from the starts of a dataset's demos, a
     rby1-sim                                                     # in another terminal
     python scripts/evaluate_insertion_sim.py                     # with student/project.yaml's evaluate: settings
     python scripts/evaluate_insertion_sim.py --checkpoint policies/pretrained/insertion_vision_mlp.pt --demos 0 5 12
-    python scripts/evaluate_insertion_sim.py --dataset datasets/insertion_vision_test --demos all
+    python scripts/evaluate_insertion_sim.py --dataset datasets/insertion_container_test --demos all
 
 Each run is logged (logs/PolicyController/run_<i>/) and the results are saved next to the policy (sim_evaluation.json):
-per demo, whether the rod's tip ended inside the container, how deep, and how far the hand ended from the demo's last pose.
+per demo, whether the rod's tip ended inside the container, how deep, how far the hand ended from the demo's last pose,
+and how far the run pushed the scene's other objects (e.g. an obstacle).
+
+The rod and the container are where the simulator has them at the end of the run, so this works for every insertion
+scene: the container held in the right hand (scenes/insertion_container.xml) or standing on the table, and a rod that was
+let go of and fell in. For another task, change task_result() below.
 """
 import argparse
 import json
@@ -16,6 +21,7 @@ from pathlib import Path
 
 import h5py
 import numpy as np
+from scipy.spatial.transform import Rotation
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts"))
@@ -26,19 +32,33 @@ from rbylearn.project import project_section  # noqa: E402
 from rbylearn.learning.features import vector_to_pose  # noqa: E402
 
 
-# The rod and the container in their hands (scenes/insertion_vision.xml): their centres and axes in the hand's frame
-ROD_IN_HAND, ROD_HALF_LENGTH = np.array([0.0, -0.03, -0.08]), 0.05
-CONTAINER_IN_HAND, CONTAINER_RADIUS, CONTAINER_HALF_LENGTH = np.array([0.0, -0.06, -0.08]), 0.035, 0.09
-AXIS_IN_HAND = np.array([0.0, -1.0, 0.0])  # both point along the hand's -y (the rod's tip, the container's opening)
+# The rod and the container (the scenes' bodies "rod" and "container"): each one's centre is its body's origin and its
+# axis the body's z, towards the rod's tip and the container's opening
+ROD_HALF_LENGTH = 0.05
+CONTAINER_RADIUS, CONTAINER_HALF_LENGTH = 0.035, 0.09
+# A container fixed to the right hand (not a free body, so the simulator doesn't report it): its pose in the hand's frame
+CONTAINER_IN_HAND = np.eye(4)
+CONTAINER_IN_HAND[:3, :3] = Rotation.from_euler("x", 90, degrees=True).as_matrix()
+CONTAINER_IN_HAND[:3, 3] = [0.0, -0.06, -0.08]
 
 
-def rod_in_container(T_left: np.ndarray, T_right: np.ndarray) -> tuple:
+def rod_in_container(T_rod: np.ndarray, T_container: np.ndarray) -> tuple:
     """(inside, depth (m)): whether the rod's tip is inside the container, and how deep past its opening."""
-    tip = T_left[:3, :3] @ (ROD_IN_HAND + ROD_HALF_LENGTH * AXIS_IN_HAND) + T_left[:3, 3]
-    centre, axis = T_right[:3, :3] @ CONTAINER_IN_HAND + T_right[:3, 3], T_right[:3, :3] @ AXIS_IN_HAND
+    tip = T_rod[:3, 3] + ROD_HALF_LENGTH * T_rod[:3, 2]
+    centre, axis = T_container[:3, 3], T_container[:3, 2]
     along = float((tip - centre) @ axis)
     radial = float(np.linalg.norm(tip - centre - along * axis))
     return bool(abs(along) < CONTAINER_HALF_LENGTH and radial < CONTAINER_RADIUS), CONTAINER_HALF_LENGTH - along
+
+
+def task_result(objects: dict, T_right: np.ndarray, starts: dict) -> dict:
+    """The run's outcome, from the objects' poses at its end (the simulator's, {name: [x, y, z, qw, qx, qy, qz]}),
+    the right hand's pose at its end, and where the demo's objects started ({name: pose})."""
+    T_container = vector_to_pose(objects["container"]) if "container" in objects else T_right @ CONTAINER_IN_HAND
+    inside, depth = rod_in_container(vector_to_pose(objects["rod"]), T_container)
+    pushed = {name: round(float(np.linalg.norm(np.subtract(objects[name][:3], start[:3]))), 4)
+              for name, start in starts.items() if name not in ("rod", "container") and name in objects}
+    return {"rod_inside": inside, "insertion_depth_m": round(depth, 4), **({"pushed_m": pushed} if pushed else {})}
 
 
 def last_pose(run: Path, feature: str) -> np.ndarray:
@@ -85,15 +105,17 @@ def main():
         finally:
             if controller.vision is not None:
                 controller._vision_stop.set()
+        if controller._hands is None:
+            raise SystemExit("No gripper server: the simulator can't say where the rod and the container are")
         run = controller.logger.path
         T_left, T_right = last_pose(run, "left.ee.pose"), last_pose(run, "right.ee.pose")
-        inside, depth = rod_in_container(T_left, T_right)
+        result = task_result(controller._hands.objects(), T_right, controller.demo_objects)
         goal = vector_to_pose(load_dataset(controller.dataset, features=["left.ee.pose"])[demo]["left.ee.pose"][-1])
-        results[f"demo {demo}"] = {"rod_inside": inside, "insertion_depth_m": round(depth, 4),
-                                   "distance_to_demo_end_m": round(float(np.linalg.norm(T_left[:3, 3] - goal[:3, 3])), 4),
+        results[f"demo {demo}"] = {**result, "distance_to_demo_end_m": round(float(np.linalg.norm(T_left[:3, 3] - goal[:3, 3])), 4),
                                    "run": str(run)}
-        print(f"Result: {'inside' if inside else 'OUTSIDE'}, depth {depth * 100:.1f} cm, "
-              f"{results[f'demo {demo}']['distance_to_demo_end_m'] * 100:.1f} cm from the demo's end")
+        pushed = "".join(f", the {name} pushed {d * 100:.1f} cm" for name, d in result.get("pushed_m", {}).items())
+        print(f"Result: {'inside' if result['rod_inside'] else 'OUTSIDE'}, depth {result['insertion_depth_m'] * 100:.1f} cm, "
+              f"{results[f'demo {demo}']['distance_to_demo_end_m'] * 100:.1f} cm from the demo's end{pushed}")
     success = np.mean([r["rod_inside"] for r in results.values()])
     print(f"\n{'═' * 60}\nRod in the container in {success:.0%} of {len(results)} runs")
     out = run_folder / "sim_evaluation.json" if run_folder else checkpoint.with_name(checkpoint.stem + "_sim_evaluation.json")

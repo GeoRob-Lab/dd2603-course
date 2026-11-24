@@ -1,8 +1,3 @@
-"""Processing steps for vision features (``type: <name>`` in preprocessing configs).
-
-A ``<object>.pointcloud`` feature is a flat (N * 3,) point cloud in the robot's base frame (``rbylearn.vision.pointclouds``).
-"""
-
 from __future__ import annotations
 
 import hashlib
@@ -16,6 +11,16 @@ from rbylearn.preprocessing.base import ProcessStep, register_step
 
 CACHE_DIR = Path(__file__).resolve().parents[3] / ".cache" / "pointcloud_features"
 
+def encode_demos(step, episodes: list[dict]) -> np.ndarray:
+    """Every frame of the demos encoded by ``step`` (a vision encoder), with a progress bar."""
+    total, done, features = sum(len(e[step.feature]) for e in episodes), 0, []
+    for e in episodes:
+        features.append(step._encode(e[step.feature]))
+        done += len(e[step.feature])
+        bar = "#" * (30 * done // total)
+        print(f"\r  Encoding {step.feature}: [{bar:.<30}] {done}/{total} frames", end="\n" if done == total else "", flush=True)
+    step.save_cache()
+    return np.concatenate(features)
 
 @register_step("pointcloud_encoder")
 @dataclass
@@ -100,9 +105,9 @@ class PointCloudEncoder(ProcessStep):
     #### The step
 
     def fit(self, episodes):
+        if self.backbone != "none":
+            features = encode_demos(self, episodes)  # fills the cache, so forward() only looks the features up
         if self.pca_dim > 0 and self.backbone != "none":
-            features = np.concatenate([self._encode(e[self.feature]) for e in episodes])
-            self.save_cache()
             self.pca_mean = features.mean(0)
             _, _, vt = np.linalg.svd(features - self.pca_mean, full_matrices=False)
             self.pca_components = vt[:self.pca_dim]
@@ -132,7 +137,6 @@ class PointCloudEncoder(ProcessStep):
     def load_state(self, state):
         if state:
             self.pca_mean, self.pca_components = np.asarray(state["pca_mean"]), np.asarray(state["pca_components"])
-
 
 @register_step("image_encoder")
 @dataclass
@@ -208,9 +212,8 @@ class ImageEncoder(ProcessStep):
             self._new = 0
 
     def fit(self, episodes):
+        features = encode_demos(self, episodes)  # fills the cache, so forward() only looks the features up
         if self.pca_dim > 0:
-            features = np.concatenate([self._encode(e[self.feature]) for e in episodes])
-            self.save_cache()
             self.pca_mean = features.mean(0)
             _, _, vt = np.linalg.svd(features - self.pca_mean, full_matrices=False)
             self.pca_components = vt[:self.pca_dim]
@@ -234,7 +237,6 @@ class ImageEncoder(ProcessStep):
     def load_state(self, state):
         if state:
             self.pca_mean, self.pca_components = np.asarray(state["pca_mean"]), np.asarray(state["pca_components"])
-
 
 @register_step("relative_to_pointcloud")
 @dataclass

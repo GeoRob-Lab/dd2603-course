@@ -8,10 +8,10 @@
 # =====================================================================================================
 
 # ---- The task and its demonstrations ----------------------------------------------------------------
-dataset: datasets/insertion_vision                # the demos you train on (downloaded during the setup, README.md)
+dataset: datasets/insertion_container                # the demos you train on (downloaded during the setup, README.md)
 
 simulator:                                        # rby1-sim (step 1)
-  scene: scenes/insertion_vision.xml              # the table, the cameras and the objects
+  scene: null                                     # the table, the cameras and the objects (null: the dataset's own scene, from its dataset_config.json)
   start_pose: ready                               # the robot's pose at start (configs/robot_configs.yaml)
   headless: false                                 # true: no window (faster; the cameras still work)
 
@@ -41,11 +41,11 @@ training:
 
 # ---- Running, scoring and looking at it (steps 3, 6 and 7) -------------------------------------------
 run:                                              # scripts/run_policy.py
-  checkpoint: policies/pretrained/insertion_vision_mlp.pt  # yours: policies/{policy_name}/checkpoints/best.pt
+  checkpoint: policies/pretrained/insertion_container.pt  # yours: policies/{policy_name}/checkpoints/best.pt
   demo: 0                                         # start where this demo started (its number); the policy only knows starts like the demos'
   dataset: null                                   # the demo's dataset (null: the one the policy was trained on)
   speed: 0.7                                      # scales the policy's velocities
-  duration: 12                                    # s at most (the demos take 4 to 6 s, so about 9 s at speed 0.7)
+  duration: 25                                    # s at most (the demos take 4 to 6 s, so about 9 s at speed 0.7)
   panel: true                                     # a control panel in the browser: start, hold, back to the start,
                                                   # another demo, success/failure, grippers (false: one rollout)
   wait_for_enter: true                            # without the panel: wait for Enter at the start pose
@@ -55,7 +55,7 @@ evaluate:                                         # scripts/evaluate_insertion_s
   dataset: null                                   # the demos to start from (null: the policy's own dataset)
   demos: validation                               # "validation" (the policy's validation demos), "all", or a list: [0, 5, 12]
   speed: 0.7
-  duration: 12
+  duration: 25
 
 report:                                           # visualization/report.py
   folders: [logs/PolicyController]                # datasets and log folders, e.g. [{dataset}, logs/PolicyController]
@@ -89,10 +89,13 @@ preprocessing:                                    # steps that turn demos (and l
       spatial: false                              # principal components
       pca_dim: 3                                  # set by policy: embedding_dim
     - type: quaternion_sign
-      features: [left.ee.pose]
+      features: [left.ee.pose, right.ee.pose]
     - type: pose_to_velocity                      # actions: end-effector velocity between poses
       pose_feature: left.ee.pose
       output_feature: left.commands.arm.ee.velocity
+    - type: pose_to_velocity                      # (the same for the right hand)
+      pose_feature: right.ee.pose
+      output_feature: right.commands.arm.ee.velocity
     - type: relative_to_pointcloud                # the hand's position seen from the container's centre:
       pose_feature: left.ee.pose                  # the same insertion wherever the container is
       pointcloud_feature: container.pointcloud
@@ -103,14 +106,14 @@ preprocessing:                                    # steps that turn demos (and l
       rotation_std_deg: 3.0
       copies: 5
     - type: normalize                             # translations to [-1, 1]
-      features: [left.ee.pose]
+      features: [left.ee.pose, right.ee.pose]
       method: minmax
       dims: [0, 1, 2]
     - type: normalize                             # the vision embeddings: zero mean, unit std
       features: [container.embedding, camera_centre.embedding]
       method: standard
     - type: normalize                             # velocities by their largest absolute value
-      features: [left.commands.arm.ee.velocity]
+      features: [left.commands.arm.ee.velocity, right.commands.arm.ee.velocity]
       method: maxabs
       clip: true
 

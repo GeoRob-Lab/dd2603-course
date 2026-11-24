@@ -1,42 +1,3 @@
-"""Processing steps and the pipeline that runs them, configured from a YAML file.
-
-Data flows through the pipeline as *frames*: dicts from feature names (``"right.ee.pose"``, ...)
-to arrays whose first axis is time. A dataset episode is a frame with T time steps; a live
-observation is a frame with one.
-
-Each step declares the *hooks* where it runs:
-
-- ``dataset``: on every demonstration, once, before training (e.g. resample, crop, derive actions).
-- ``training``: like ``dataset``, but on the training demonstrations only, not on validation data
-  (e.g. data augmentation).
-- ``observation``: on every observation at run time, before it goes into the policy.
-- ``action``: on every policy output at run time, before it becomes a command. Steps that change
-  outputs during training (e.g. normalization) run their *inverse* here.
-
-A step that runs at both ``dataset`` and ``observation`` processes training data and live data in
-exactly the same way. Steps with parameters learned from the data (e.g. normalization statistics)
-implement ``fit``; the pipeline fits them on the training data and saves them with the policy.
-
-Writing a step::
-
-    @register_step("my_step")
-    @dataclass
-    class MyStep(ProcessStep):
-        features: list[str] = field(default_factory=list)
-        hooks: list[str] = field(default_factory=lambda: ["dataset", "observation"])
-
-        def forward(self, frame):
-            for f in self.features:
-                frame[f] = ...          # (T, ...) arrays
-            return frame
-
-and in the config::
-
-    steps:
-      - type: my_step
-        features: [right.ee.pose]
-"""
-
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass, field
@@ -48,7 +9,6 @@ import yaml
 HOOKS = ("dataset", "training", "observation", "action")
 STEPS: dict[str, type["ProcessStep"]] = {}
 
-
 def register_step(name: str):
     """Class decorator: make a ProcessStep available in configs as ``type: <name>``."""
     def decorator(cls):
@@ -56,7 +16,6 @@ def register_step(name: str):
         cls.type = name
         return cls
     return decorator
-
 
 @dataclass
 class ProcessStep:
@@ -81,7 +40,6 @@ class ProcessStep:
 
     def load_state(self, state: dict) -> None:
         """Restore what ``state`` returned. Optional."""
-
 
 class Pipeline:
     """An ordered list of processing steps.

@@ -26,8 +26,9 @@ max_joint_step_deg: 10.0
 max_ee_step: 0.05 # m
 max_ee_rotation_step_deg: 15.0
 
-# Commanded joint positions stay this far inside rby1-sdk's joint limits.
-joint_limit_margin_deg: 2.0
+# Commanded joint positions stay this far inside rby1-sdk's joint limits (0: the limits themselves; the
+# real demonstrations go right up to them, e.g. left_arm_5 at 108 deg and left_arm_1 at 1 deg).
+joint_limit_margin_deg: 0.0
 
 # Box (m, base frame) both end-effectors must stay in, for commands and measured state.
 workspace:

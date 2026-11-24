@@ -27,18 +27,15 @@ import numpy as np
 from rbylearn.commands import ARMS, EEPoses, JointPositions, Observation
 from rbylearn.utils.geometry import matrix_to_quat, quat_to_matrix, so3_exp
 
-
 def pose_to_vector(T: np.ndarray) -> np.ndarray:
     """4x4 pose -> [x, y, z, qw, qx, qy, qz]."""
     return np.concatenate([T[:3, 3], matrix_to_quat(T[:3, :3])])
-
 
 def vector_to_pose(x: np.ndarray) -> np.ndarray:
     """[x, y, z, qw, qx, qy, qz] -> 4x4 pose."""
     T = np.eye(4)
     T[:3, :3], T[:3, 3] = quat_to_matrix(x[3:7]), x[:3]
     return T
-
 
 def observation_to_frame(obs: Observation, pointclouds=None) -> dict[str, np.ndarray]:
     """All state features of an observation; with ``pointclouds`` (:class:`rbylearn.vision.pointclouds.PointClouds`),
@@ -54,17 +51,18 @@ def observation_to_frame(obs: Observation, pointclouds=None) -> dict[str, np.nda
         frame.update(pointclouds(camera_frames(obs.cameras)))
     return frame
 
-
 def frame_to_command(frame: dict[str, np.ndarray], obs: Observation, dt: float):
     """The robot command for output features (all task-space or all joint-space).
 
     Velocities become pose targets ``dt`` seconds ahead of the current pose.
+    A gripper command becomes fully closed (1) or fully open (0), so a policy's in-between values
+    (e.g. 0.3 for a moment) cannot loosen its grip.
     """
     ee_targets, joint_targets, grippers = {}, {}, {}
     for name, value in frame.items():
         arm, _, rest = name.partition(".")
         if rest == "commands.gripper":
-            grippers[arm] = float(np.clip(value[0], 0.0, 1.0))
+            grippers[arm] = 1.0 if value[0] > 0.36 else 0.0  # the demos only open (0) or close (0.72): halfway decides
         elif rest == "commands.arm.ee.velocity":
             T = obs.ee_poses[arm].copy()
             T[:3, 3] += value[:3] * dt
@@ -80,7 +78,6 @@ def frame_to_command(frame: dict[str, np.ndarray], obs: Observation, dt: float):
         raise ValueError("Output features must be all end-effector or all joint commands")
     grippers = grippers or None
     return EEPoses(**ee_targets, grippers=grippers) if ee_targets else JointPositions(**joint_targets, grippers=grippers)
-
 
 def policy_actions(saved: dict, y: np.ndarray) -> list[dict[str, np.ndarray]]:
     """Split a policy's output vector into its actions (one with ``chunk_size: 1``, otherwise a chunk

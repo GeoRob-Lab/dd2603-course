@@ -112,6 +112,8 @@ class ControlRobot:
             self.initial_pose_name = initial_pose or configs["initial_pose"]
             self.q_init = load_pose(self.initial_pose_name)
         self.initial_pose_time = float(configs["initial_pose_time"])
+        self.start_pause = float(configs.get("start_pause", 0.0))  # s at the start pose before a rollout
+        self._sets_joints = None  # whether the simulator puts the joints in a pose at once (unknown until tried)
         self.conditioning = conditioning
         self.wait_for_enter = wait_for_enter
 
@@ -163,8 +165,6 @@ class ControlRobot:
                        *(["gripper"] if self._hands is not None else []), "quit"]
             # Only the left gripper gets buttons: the right hand holds the container, which stays put if its gripper opens
             self.panel = LivePanel(type(self).__name__, buttons, arms=("left",) if self._hands is not None else ())
-
-    ### Methods to implement in a controller
 
     def reset(self, obs: Observation) -> None:
         """
@@ -258,6 +258,33 @@ class ControlRobot:
                                    f"{timeout:.0f} s after the move ended")
             time.sleep(0.05)
 
+    def simulated(self) -> bool:
+        """Whether the robot is rby1-sim (with its grippers' server)"""
+        return self.config.target == "sim" and self._hands is not None and self._sets_joints is not False
+
+    def jump_to_pose(self, q: dict[str, np.ndarray], minimum_time: float) -> None:
+        """
+        Description
+        -----------
+        The torso and arms at joint positions ``q`` (per chain; chains left out stay where they are): in rby1-sim at once
+        (the scene reset, faster), on the real robot (or an older simulator) by moving there in at least ``minimum_time`` s.
+        """
+        current = np.asarray(self.robot.get_state().position, dtype=float)
+        if self.simulated():
+            full = current.copy()
+            for chain, idx in self._robot_chain_idx.items():
+                if chain in q:
+                    full[idx] = q[chain]
+            try:
+                self._hands.set_joints(full)
+                self._sets_joints = True
+                time.sleep(0.1)  # (the robot's state reports the new joints)
+                return
+            except Exception as error:  # a simulator from before set_joints: restart it to update it
+                self._sets_joints = False
+                print(f"The simulator can't put the robot in a pose at once ({error}; restart it): moving there instead")
+        self.move_to_pose({chain: np.asarray(q.get(chain, current[idx])) for chain, idx in self._robot_chain_idx.items()}, minimum_time)
+
     def move_to_ee_poses(self, targets: EEPoses, minimum_time: float) -> None:
         """
         Description
@@ -336,8 +363,9 @@ class ControlRobot:
         as many rollouts as the panel's buttons ask for, each saved as its own run.
         """
         try:
-            print(f"Moving to the initial pose '{self.initial_pose_name}'")
-            self._status("moving", f"Moving to the initial pose '{self.initial_pose_name}'")
+            how = "Putting the robot in" if self.simulated() else "Moving to"
+            print(f"{how} the initial pose '{self.initial_pose_name}'")
+            self._status("moving", f"{how} the initial pose '{self.initial_pose_name}'")
             self._go_to_start()
             if self.panel is None:
                 if self.wait_for_enter:
@@ -358,9 +386,18 @@ class ControlRobot:
         print("Controller finished.")
 
     def _go_to_start(self, lift: float = 0.0) -> None:
-        """The initial pose, then ``reset`` (e.g. on to a demo's start). First the hands retrace the last rollout's way
-        backwards (if they are still where it ended); ``lift`` (m): then raise both hands that much, straight up, so that
-        they leave the table and the objects before the arms swing back."""
+        """The initial pose, then ``reset`` (e.g. on to a demo's start), then a pause of ``start_pause`` s
+        (configs/robot_configs.yaml). In rby1-sim the robot is put there at once (see jump_to_pose). On the real robot it
+        moves there: first the hands retrace the last rollout's way backwards (if they are still where it ended); ``lift``
+        (m): then raise both hands that much, straight up, so that they leave the table and the objects before the arms
+        swing back."""
+        if self.simulated():
+            _LAST_PATH.pop(self.config.address, None)
+            self.jump_to_pose(self.q_init, self.initial_pose_time)
+            self._regrasp()
+            self.reset(self.get_observation())
+            self._pause()
+            return
         self._retrace()
         if lift > 0:
             obs = self.get_observation()
@@ -373,6 +410,12 @@ class ControlRobot:
         self.move_to_pose(self.q_init, self.initial_pose_time)
         self._regrasp()
         self.reset(self.get_observation())
+        self._pause()
+
+    def _pause(self) -> None:
+        """Wait start_pause s at the start pose (configs/robot_configs.yaml), e.g. for the scene to settle."""
+        if self.start_pause > 0:
+            time.sleep(self.start_pause)
 
     def _regrasp(self) -> None:
         """rby1-sim only: the objects that start in a hand (e.g. the rod and the container) back there, the fingers closed
@@ -600,7 +643,6 @@ class ControlRobot:
             raise RuntimeError("Could not enable the control manager.")
         return robot
 
-
 def code_version() -> dict:
     """The code a run used: git commit, branch, and whether files had changed since that commit (a log can be
     traced back to the course release it ran with). {} outside a git checkout."""
@@ -615,7 +657,6 @@ def code_version() -> dict:
         return {"commit": commit, "branch": git("rev-parse", "--abbrev-ref", "HEAD"), "changed_files": changed}
     except (OSError, subprocess.SubprocessError):
         return {}
-
 
 def _project_settings() -> dict:
     """student/project.yaml (on top of the defaults) as the run read it."""

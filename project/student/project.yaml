@@ -4,39 +4,46 @@
 #
 #    python scripts/train.py                     train your policy                    -> policy, training
 #    python scripts/run_policy.py                run a policy on the robot / sim      -> run
-#    python scripts/evaluate_insertion_sim.py    score a policy in the simulator      -> evaluate
+#    python scripts/evaluate_sim.py              score a policy in the simulator      -> evaluate
 #
 #  Anything not set here comes from configs/defaults.yaml (the task, the data preparation, the robot):
 #  the same for everyone, so policies stay comparable. To change one of those, copy just that
 #  setting here. 
-#  Setting anything via the command line will override these (e.g. `--demo 15`).
+#  Setting anything via the command line will override these (e.g. `--demo 24`).
 #  {policy_name} below is replaced by its value.
 # =====================================================================================================
 
+# 0. Choose dataset
+dataset: datasets/insertion_container # options: datasets/insertion_container, datasets/insertion_fixed_container_pose, datasets/insertion_container_with_obstacle
+
 # 1. Your policy: what it is, what it sees, what it does
-policy_name: my_first_policy                     # its runs are saved in policies/<policy_name>/
+policy_name: my_first_policy # its runs are saved in policies/<policy_name>/
 
 policy:
   type: student/example_policy.py:ExamplePolicy  # YOURS: student/my_policy.py:MyPolicy
-  hidden: [256, 256]
-  # To see the full list of all possible input/output features open `docs/guide.html` in a browser.
+  hidden: [64, 64]
+  embedding_noise: 0.1 # training only: noise added to the (normalised) vision embeddings
   input_features: [left.ee.pose, container.embedding]
-  embedding_dim: 3                               # the vision encoder's output reduced to its first 3 principal components (PCA), or null for all of it
-  output_features: [left.commands.arm.ee.velocity]
-  chunk_size: 1                                  # how many actions the policy predicts at once (action chunking)
-  execute_steps: 1                               # how many of the predicted actions the robot runs before the next prediction
+  embedding_dim: 3 # the vision encoder's output reduced to its first 3 principal components (PCA), or null for all (1024) of it
+  output_features: [left.commands.arm.ee.velocity, left.commands.gripper]
+  chunk_size: 1 # how many actions the policy predicts at once (action chunking)
+  execute_steps: 1 # how many of the predicted actions the robot runs before the next prediction
 
 # 2. Training the policy (python scripts/train.py)
 training:
   epochs: 1000
   batch_size: 256
   lr: 0.001
+  weight_decay: 0.0001 # pulls the weights towards zero (AdamW)
+  seed: 0
+  checkpoint_every: 100
+  rollout_every: 100
 
 # 3. Running a trained policy (python scripts/run_policy.py)
 run:
-  checkpoint: policies/pretrained/insertion_vision_mlp.pt   # yours: policies/{policy_name}/checkpoints/best.pt
+  checkpoint: policies/pretrained/insertion_container.pt   # YOURS: policies/{policy_name}/checkpoints/best.pt
 
 # 4. Scoring a trained policy in the simulator (python scripts/evaluate_insertion_sim.py)
 evaluate:
-  checkpoint: policies/{policy_name}/checkpoints/best.pt
-  demos: validation                              # "validation", "all", or a list such as [30, 37]
+  checkpoint: policies/pretrained/insertion_container.pt   # YOURS: policies/{policy_name}/checkpoints/best.pt
+  demos: validation # "validation", "all", or a list such as [24, 27]

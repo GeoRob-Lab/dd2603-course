@@ -1,9 +1,9 @@
 <!--
   Insertion task with cameras: scenes/insertion.xml's rod and container (opaque, the container blue for the
-  colour crop) and the table with its three cameras (scenes/table.xml). Use: rby1-sim --scene scenes/insertion_vision.xml
+  colour crop) and the table with its three cameras (scenes/table.xml). Use: rby1-sim --scene scenes/insertion_container.xml
   Written by scripts/make_scenes.py: change it there.
 -->
-<mujoco model="insertion_vision">
+<mujoco model="insertion_container">
   <asset>
     <texture name="floor" type="2d" file="textures/lab_floor.png"/>
     <material name="floor" texture="floor" texrepeat="1 1"/>

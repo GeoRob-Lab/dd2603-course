@@ -1,0 +1,74 @@
+<!--
+  DRAFT (not released): table-top insertion around an obstacle. The left hand holds the rod (as in
+  scenes/insertion_container.xml); the container (the same blue tube, open at the top) stands upright on the table, and a
+  small cylinder stands between where the rod starts and the container. Demonstrations go around it (left) or over it.
+  Made from scenes/insertion_container.xml by hand; the three cameras are moved and turned to look at the task (all aimed at (0.58, 0.36, 0.86)).
+-->
+<mujoco model="insertion_tabletop_obstacle">
+  <asset>
+    <texture name="floor" type="2d" file="textures/lab_floor.png"/>
+    <material name="floor" texture="floor" texrepeat="1 1"/>
+    <material name="table_top" specular="0" shininess="0" reflectance="0"/>
+    <mesh name="container_tube" file="meshes/container_tube.obj"/>
+  </asset>
+  <worldbody>
+    <light name="ceiling" pos="0.6 0 2.6" dir="0 0 -1" diffuse="0.4 0.4 0.4" specular="0.05 0.05 0.05" castshadow="false"/>
+    <light name="front" pos="1.8 0 1.8" dir="-1 0 -0.6" diffuse="0.2 0.2 0.2" specular="0 0 0" castshadow="false"/>
+    <body name="table">
+      <geom name="table_top" type="box" pos="0.6500 0.0000 0.7050" size="0.4000 0.7000 0.0150" rgba="0.04 0.04 0.045 1" contype="3" conaffinity="3" friction="0.6 0.01 0.001" material="table_top"/>
+      <geom name="table_leg_00" type="box" pos="0.2900 -0.6600 0.3450" size="0.0200 0.0200 0.3450" rgba="0.25 0.25 0.27 1" contype="0" conaffinity="0"/>
+      <geom name="table_leg_01" type="box" pos="0.2900 0.6600 0.3450" size="0.0200 0.0200 0.3450" rgba="0.25 0.25 0.27 1" contype="0" conaffinity="0"/>
+      <geom name="table_leg_10" type="box" pos="1.0100 -0.6600 0.3450" size="0.0200 0.0200 0.3450" rgba="0.25 0.25 0.27 1" contype="0" conaffinity="0"/>
+      <geom name="table_leg_11" type="box" pos="1.0100 0.6600 0.3450" size="0.0200 0.0200 0.3450" rgba="0.25 0.25 0.27 1" contype="0" conaffinity="0"/>
+      <camera name="camera_centre" pos="1.1000 0.3600 1.2500" xyaxes="0.000000 1.000000 0.000000 -0.600000 0.000000 0.800000" fovy="42.5" resolution="640 480"/>
+      <geom name="camera_centre_body" type="box" pos="1.1104 0.3600 1.2563" euler="0 0 -180.00" size="0.0125 0.045 0.0125" rgba="0.55 0.56 0.58 1" contype="0" conaffinity="0"/>
+      <geom name="camera_centre_post" type="cylinder" fromto="1.1160 0.3600 0.7200 1.1160 0.3600 1.2438" size="0.008" rgba="0.15 0.15 0.15 1" contype="0" conaffinity="0"/>
+      <camera name="camera_left" pos="0.9500 0.8500 1.3000" xyaxes="-0.798041 0.602603 0.000000 -0.351009 -0.464849 0.812839" fovy="42.5" resolution="640 480"/>
+      <geom name="camera_left_body" type="box" pos="0.9564 0.8584 1.3063" euler="0 0 -127.06" size="0.0125 0.045 0.0125" rgba="0.55 0.56 0.58 1" contype="0" conaffinity="0"/>
+      <geom name="camera_left_post" type="cylinder" fromto="0.9598 0.8630 0.7200 0.9598 0.8630 1.2938" size="0.008" rgba="0.15 0.15 0.15 1" contype="0" conaffinity="0"/>
+      <camera name="camera_right" pos="1.0000 -0.1500 1.3000" xyaxes="0.771930 0.635707 -0.000000 -0.352375 0.427884 0.832314" fovy="42.5" resolution="640 480"/>
+      <geom name="camera_right_body" type="box" pos="1.0069 -0.1584 1.3063" euler="0 0 129.47" size="0.0125 0.045 0.0125" rgba="0.55 0.56 0.58 1" contype="0" conaffinity="0"/>
+      <geom name="camera_right_post" type="cylinder" fromto="1.0106 -0.1628 0.7200 1.0106 -0.1628 1.2938" size="0.008" rgba="0.15 0.15 0.15 1" contype="0" conaffinity="0"/>
+    </body>
+    <!-- The rod across the left gripper's fingers, the container held by its base in the right gripper (scenes/insertion.xml).
+         The rod is free: the left fingers hold it, and it falls when they open (into the container, at the end). It
+         also lands on the table (contype/conaffinity 10: the container's bit 8 and the table's bit 2). -->
+    <body name="rod@EE_BODY_L" pos="0 -0.03 -0.08" quat="0.7071068 0.7071068 0 0">
+      <freejoint/>
+      <geom name="rod" type="cylinder" size="0.014 0.05" rgba="0.85 0.20 0.10 1" contype="0" conaffinity="0" group="1" mass="0"/>
+      <geom name="rod_collision" type="capsule" size="0.014 0.036000000000000004" rgba="0.85 0.2 0.1 0.3" group="3" mass="0.06" contype="10" conaffinity="10" condim="3" friction="0.3 0.005 0.0001" solref="0.004 1"/>
+    </body>
+    <body name="container" pos="0.66 0.33 0.81">  <!-- standing on the table (its bottom at the table top, 0.72), open at the top -->
+      <!-- Free (loose on the table), so that it can be put elsewhere (each demo's container_start): its bottom touches
+           the table (contype/conaffinity 10, as the rod's) and the rod; its walls only the rod (8). -->
+      <freejoint/>
+      <!-- What the cameras see: a tube open at the top (the rod goes in there). "container" keeps the solid cylinder's
+           mass (and the robot's dynamics as in the demos), hidden like the collision walls (group 3). -->
+      <geom name="container_look" type="mesh" mesh="container_tube" rgba="0.15 0.40 0.80 1" contype="0" conaffinity="0" group="1" mass="0"/>
+      <geom name="container" type="cylinder" size="0.035 0.09" rgba="0.15 0.40 0.80 0" contype="0" conaffinity="0" group="3"/>
+      <geom name="container_wall_00" type="box" pos="0.03200 0.00000 0.0000" euler="0 0 0.00" size="0.0030 0.00937 0.0900" rgba="0.15 0.4 0.8 0.3" group="3" contype="8" conaffinity="8" condim="3" friction="0.3 0.005 0.0001" solref="0.004 1"/>
+      <geom name="container_wall_01" type="box" pos="0.02956 0.01225 0.0000" euler="0 0 22.50" size="0.0030 0.00937 0.0900" rgba="0.15 0.4 0.8 0.3" group="3" contype="8" conaffinity="8" condim="3" friction="0.3 0.005 0.0001" solref="0.004 1"/>
+      <geom name="container_wall_02" type="box" pos="0.02263 0.02263 0.0000" euler="0 0 45.00" size="0.0030 0.00937 0.0900" rgba="0.15 0.4 0.8 0.3" group="3" contype="8" conaffinity="8" condim="3" friction="0.3 0.005 0.0001" solref="0.004 1"/>
+      <geom name="container_wall_03" type="box" pos="0.01225 0.02956 0.0000" euler="0 0 67.50" size="0.0030 0.00937 0.0900" rgba="0.15 0.4 0.8 0.3" group="3" contype="8" conaffinity="8" condim="3" friction="0.3 0.005 0.0001" solref="0.004 1"/>
+      <geom name="container_wall_04" type="box" pos="0.00000 0.03200 0.0000" euler="0 0 90.00" size="0.0030 0.00937 0.0900" rgba="0.15 0.4 0.8 0.3" group="3" contype="8" conaffinity="8" condim="3" friction="0.3 0.005 0.0001" solref="0.004 1"/>
+      <geom name="container_wall_05" type="box" pos="-0.01225 0.02956 0.0000" euler="0 0 112.50" size="0.0030 0.00937 0.0900" rgba="0.15 0.4 0.8 0.3" group="3" contype="8" conaffinity="8" condim="3" friction="0.3 0.005 0.0001" solref="0.004 1"/>
+      <geom name="container_wall_06" type="box" pos="-0.02263 0.02263 0.0000" euler="0 0 135.00" size="0.0030 0.00937 0.0900" rgba="0.15 0.4 0.8 0.3" group="3" contype="8" conaffinity="8" condim="3" friction="0.3 0.005 0.0001" solref="0.004 1"/>
+      <geom name="container_wall_07" type="box" pos="-0.02956 0.01225 0.0000" euler="0 0 157.50" size="0.0030 0.00937 0.0900" rgba="0.15 0.4 0.8 0.3" group="3" contype="8" conaffinity="8" condim="3" friction="0.3 0.005 0.0001" solref="0.004 1"/>
+      <geom name="container_wall_08" type="box" pos="-0.03200 0.00000 0.0000" euler="0 0 180.00" size="0.0030 0.00937 0.0900" rgba="0.15 0.4 0.8 0.3" group="3" contype="8" conaffinity="8" condim="3" friction="0.3 0.005 0.0001" solref="0.004 1"/>
+      <geom name="container_wall_09" type="box" pos="-0.02956 -0.01225 0.0000" euler="0 0 202.50" size="0.0030 0.00937 0.0900" rgba="0.15 0.4 0.8 0.3" group="3" contype="8" conaffinity="8" condim="3" friction="0.3 0.005 0.0001" solref="0.004 1"/>
+      <geom name="container_wall_10" type="box" pos="-0.02263 -0.02263 0.0000" euler="0 0 225.00" size="0.0030 0.00937 0.0900" rgba="0.15 0.4 0.8 0.3" group="3" contype="8" conaffinity="8" condim="3" friction="0.3 0.005 0.0001" solref="0.004 1"/>
+      <geom name="container_wall_11" type="box" pos="-0.01225 -0.02956 0.0000" euler="0 0 247.50" size="0.0030 0.00937 0.0900" rgba="0.15 0.4 0.8 0.3" group="3" contype="8" conaffinity="8" condim="3" friction="0.3 0.005 0.0001" solref="0.004 1"/>
+      <geom name="container_wall_12" type="box" pos="-0.00000 -0.03200 0.0000" euler="0 0 270.00" size="0.0030 0.00937 0.0900" rgba="0.15 0.4 0.8 0.3" group="3" contype="8" conaffinity="8" condim="3" friction="0.3 0.005 0.0001" solref="0.004 1"/>
+      <geom name="container_wall_13" type="box" pos="0.01225 -0.02956 0.0000" euler="0 0 292.50" size="0.0030 0.00937 0.0900" rgba="0.15 0.4 0.8 0.3" group="3" contype="8" conaffinity="8" condim="3" friction="0.3 0.005 0.0001" solref="0.004 1"/>
+      <geom name="container_wall_14" type="box" pos="0.02263 -0.02263 0.0000" euler="0 0 315.00" size="0.0030 0.00937 0.0900" rgba="0.15 0.4 0.8 0.3" group="3" contype="8" conaffinity="8" condim="3" friction="0.3 0.005 0.0001" solref="0.004 1"/>
+      <geom name="container_wall_15" type="box" pos="0.02956 -0.01225 0.0000" euler="0 0 337.50" size="0.0030 0.00937 0.0900" rgba="0.15 0.4 0.8 0.3" group="3" contype="8" conaffinity="8" condim="3" friction="0.3 0.005 0.0001" solref="0.004 1"/>
+      <geom name="container_bottom" type="box" pos="0 0 -0.0750" size="0.0320 0.0320 0.0150" rgba="0.15 0.4 0.8 0.3" group="3" contype="10" conaffinity="10" condim="3" friction="0.3 0.005 0.0001" solref="0.004 1"/>
+    </body>
+    <!-- The obstacle: a cylinder (16 cm across, 15 cm tall) on the table between where the rod starts and the container
+         (grey: not blue, so the container's colour crop doesn't see it). -->
+    <body name="obstacle" pos="0.48 0.32 0.795">  <!-- loose on the table (0.5 kg): the robot knocks it over if it runs into it -->
+      <freejoint/>
+      <geom name="obstacle_box" type="cylinder" size="0.08 0.075" mass="0.5" rgba="0.62 0.58 0.52 1" contype="3" conaffinity="3"/>
+    </body>
+  </worldbody>
+</mujoco>

@@ -68,7 +68,7 @@ class Cameras:
                     return sorted(self.images)
             time.sleep(0.05)
         raise TimeoutError(f"No camera images from {self.address} within {timeout:g} s. Is the simulator running with "
-                           "a scene that has cameras (e.g. rby1-sim --scene scenes/insertion_vision.xml)?")
+                           "a scene that has cameras (e.g. rby1-sim --scene scenes/insertion_container.xml)?")
 
     def latest(self) -> dict[str, tuple]:
         """{camera: (colour, depth, calibration)}: each camera's latest images."""

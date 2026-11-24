@@ -80,6 +80,14 @@ class Gripper:
         """rby1-sim only: the graspable objects' poses [x, y, z, qw, qx, qy, qz] (base frame)."""
         return self.request({"cmd": "objects"})["poses"]
 
+    def set_joints(self, q) -> None:
+        """rby1-sim only: the robot's joints (all of them, in the robot's order) at q at once, at rest."""
+        self.request({"cmd": "set_joints", "q": [float(v) for v in q]})
+
+    def scene(self) -> str | None:
+        """rby1-sim only: the scene file the simulator was started with (None: none)."""
+        return self.request({"cmd": "scene"})["scene"]
+
     def in_hand(self) -> dict[str, str]:
         """rby1-sim only: the objects that start in a hand, and which arm's (empty for the real robot)."""
         return dict(self.request({"cmd": "state"}).get("in_hand", {}))

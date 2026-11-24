@@ -1,28 +1,3 @@
-"""Neural-network policies, their training, and saving them with everything needed to run them.
-
-A policy maps a policy input vector (e.g. the end-effector pose and what the cameras see) to an
-output vector (e.g. an end-effector velocity). :class:`MLPPolicy` is behaviour cloning, one output per
-input (mean squared error).
-
-Your own policy is a class like it, in a file of yours: ``type: student/my_policy.py:MyPolicy`` in
-``student/project.yaml`` (the file's path from the top of the repository). It is a ``torch.nn.Module`` with
-
-    __init__(self, input_dim, output_dim, **settings)   the other settings of ``policy:`` (e.g. hidden)
-    loss(self, x, y)                                     a training batch's loss (a scalar tensor)
-    predict(self, x)                                     one input (numpy) -> one output (numpy)
-
-so that training, evaluation and the robot controller treat every policy the same way.
-
-If your ``__init__`` also takes ``features``, it gets what the vectors hold, in order (sizes after preprocessing)::
-
-    {"inputs":  {"left.ee.pose": [7], "container.embedding": [6]},     # x = [pose (7) | embedding (6, or 1027 with embedding_dim: null)]
-     "outputs": {"left.commands.arm.ee.velocity": [6]},                # one action
-     "chunk_size": 1}                                                   # y = chunk_size actions, one after the other
-
-and :func:`feature_slices` turns it into where each feature is, e.g. ``x[..., s["left.ee.pose"]][..., 3:7]`` is the
-hand's unit quaternion. The guide (docs/guide.html, "Your policy's interface") describes every feature and option.
-"""
-
 from __future__ import annotations
 
 import importlib.util
@@ -36,18 +11,23 @@ from torch import nn
 
 from rbylearn.preprocessing import Pipeline
 
-
 def mlp(input_dim: int, output_dim: int, hidden) -> nn.Sequential:
-    """Linear layers of the given widths with ReLUs in between."""
+    """
+    Description
+    -----------
+    Linear layers of the given widths with ReLUs in between.
+    """
     sizes = [input_dim, *hidden]
     layers = []
     for a, b in zip(sizes[:-1], sizes[1:]):
         layers += [nn.Linear(a, b), nn.ReLU()]
     return nn.Sequential(*layers, nn.Linear(sizes[-1], output_dim))
 
-
 class MLPPolicy(nn.Module):
-    """Multi-layer perceptron from a policy input vector to an output vector.
+    """
+    Description
+    -----------
+    Multi-layer perceptron.
 
     Parameters
     ----------
@@ -74,13 +54,10 @@ class MLPPolicy(nn.Module):
         """Output for one input vector, as numpy."""
         return self(torch.as_tensor(x, dtype=torch.float32)[None])[0].numpy()
 
-
-
 POLICIES = {"mlp": MLPPolicy}
 ROOT = Path(__file__).resolve().parents[3]
 # The settings of ``policy:`` that are not the policy class's own
 NOT_SETTINGS = ("type", "dt", "chunk_size", "execute_steps", "input_features", "output_features", "embedding_dim")
-
 
 def policy_class(kind: str) -> type:
     """The class of a policy type: a built-in one (``"mlp"``), or ``"path/to/file.py:ClassName"``."""
@@ -101,7 +78,6 @@ def policy_class(kind: str) -> type:
         raise ValueError(f"policy type '{kind}': {path.name} has no class {name}")
     return getattr(module, name)
 
-
 def feature_slices(features: dict) -> dict[str, slice]:
     """Where each feature is in the input vector, and in one action of the output vector: ``features`` as a policy's
     ``__init__`` gets it (see the module's docstring) -> {name: slice}. The action ``k`` of a chunk is at
@@ -114,7 +90,6 @@ def feature_slices(features: dict) -> dict[str, slice]:
             slices[name] = slice(start, start + size)
             start += size
     return slices
-
 
 def make_policy(policy_config: dict, input_dim: int, output_dim: int, features: dict | None = None) -> nn.Module:
     """The policy described by the ``policy`` section of the project (or a training config). ``features``: what the
@@ -129,12 +104,13 @@ def make_policy(policy_config: dict, input_dim: int, output_dim: int, features: 
     policy.config = {**getattr(policy, "config", {}), "type": kind, "input_dim": input_dim, "output_dim": output_dim, **settings}
     return policy
 
+def train_policy(policy: nn.Module, X: np.ndarray, Y: np.ndarray, X_val: np.ndarray | None = None, Y_val: np.ndarray | None = None, epochs: int = 200, batch_size: int = 256, lr: float = 1e-3, weight_decay: float = 0.0, seed: int = 0, on_epoch=None) -> dict[str, list[float]]:
+    """
+    Description
+    -----------
+    Fit ``policy`` to ``(X, Y)`` by minimizing its ``loss`` (behaviour cloning).
 
-def train_policy(policy: nn.Module, X: np.ndarray, Y: np.ndarray, X_val: np.ndarray | None = None,
-                 Y_val: np.ndarray | None = None, epochs: int = 200, batch_size: int = 256, lr: float = 1e-3,
-                 seed: int = 0, on_epoch=None) -> dict[str, list[float]]:
-    """Fit ``policy`` to ``(X, Y)`` by minimizing its ``loss`` (behaviour cloning).
-
+    ``weight_decay`` (AdamW) pulls the weights towards zero, against overfitting.
     ``on_epoch(epoch, train_loss, validation_loss)`` is called after every epoch (e.g. to save
     checkpoints). Returns the training (and, if validation data is given, validation) loss of each epoch.
     """
@@ -144,7 +120,7 @@ def train_policy(policy: nn.Module, X: np.ndarray, Y: np.ndarray, X_val: np.ndar
     has_val = X_val is not None and len(X_val) > 0
     if has_val:
         X_val, Y_val = torch.as_tensor(X_val, dtype=torch.float32), torch.as_tensor(Y_val, dtype=torch.float32)
-    optimizer = torch.optim.Adam(policy.parameters(), lr=lr)
+    optimizer = torch.optim.AdamW(policy.parameters(), lr=lr, weight_decay=weight_decay)
     history = {"train": [], "validation": []}
     for epoch in range(epochs):
         policy.train()
@@ -166,23 +142,27 @@ def train_policy(policy: nn.Module, X: np.ndarray, Y: np.ndarray, X_val: np.ndar
             print(f"epoch {epoch:4d}  train {history['train'][-1]:.5f}  validation {val_loss:.5f}")
     return history
 
-
-def save_policy(path: str | Path, policy: nn.Module, pipeline: Pipeline, input_features: dict[str, int],
-                output_features: dict[str, int], dt: float, config: dict | None = None,
-                chunk_size: int = 1, execute_steps: int = 1, **extra) -> None:
-    """Save a policy with what is needed to run it: the fitted preprocessing pipeline, the input and
+def save_policy(path: str | Path, policy: nn.Module, pipeline: Pipeline, input_features: dict[str, int], output_features: dict[str, int], dt: float, config: dict | None = None, chunk_size: int = 1, execute_steps: int = 1, **extra) -> None:
+    """
+    Description
+    -----------
+    Save a policy with what is needed to run it: the fitted preprocessing pipeline, the input and
     output features (name -> size of one action, in order), the time step it runs at, its action
     chunking (``chunk_size`` actions predicted at once, the first ``execute_steps`` of them executed),
-    and anything in ``extra`` (e.g. ``pointclouds``: how its point-cloud inputs are made from the cameras)."""
+    and anything in ``extra`` (e.g. ``pointclouds``: how its point-cloud inputs are made from the cameras).
+    """
     Path(path).parent.mkdir(parents=True, exist_ok=True)
     torch.save({"policy_config": policy.config, "policy_weights": policy.state_dict(),
                 "pipeline": pipeline.state_dict(), "input_features": input_features,
                 "output_features": output_features, "dt": dt, "config": config,
                 "chunk_size": chunk_size, "execute_steps": execute_steps, **extra}, path)
 
-
 def load_policy(path: str | Path) -> dict:
-    """Load what :func:`save_policy` saved; ``policy`` and ``pipeline`` are rebuilt, ready to run."""
+    """
+    Description
+    -----------
+    Load what :func:`save_policy` saved; ``policy`` and ``pipeline`` are rebuilt, ready to run.
+    """
     checkpoint = torch.load(path, weights_only=False)
     settings = dict(checkpoint["policy_config"])
     kind = settings.pop("type", "mlp")
