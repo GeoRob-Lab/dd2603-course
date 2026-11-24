@@ -42,17 +42,38 @@ python -m rbylearn.sim.models
 
 The last command downloads the robot's model files (about 250 MB), once.
 
-Last, get the demonstrations (about 400 MB) from the course's GitHub release and unzip them into `datasets/`:
+Last, get the demonstrations. There are three datasets, one task each, and each is its own GitHub release:
+
+| Dataset | Demos | Size | The task |
+|---|---|---|---|
+| `insertion_container` | 30 | 270 MB | the right hand holds the container somewhere else in each demo; the left hand inserts the rod |
+| `insertion_fixed_container_pose` | 15 | 110 MB | the same, with the container always in the same place |
+| `insertion_container_with_obstacle` | 20 | 330 MB | the container stands on the table; the rod goes around or over an obstacle into it |
+
+Download only the one you will work on, or all three. Each unzips into its own folder in `datasets/`:
 
 ```bash
-curl -LO https://github.com/GeoRob-Lab/dd2603-course/releases/download/project-v1.0/insertion_container.zip
-unzip insertion_container.zip -d datasets/
+curl -LO https://github.com/GeoRob-Lab/dd2603-course/releases/download/insertion_container-v1.0/insertion_container.zip
+unzip insertion_container.zip -d datasets/ -x "__MACOSX/*"
 rm insertion_container.zip
 ```
 
-You should see the environment created without errors, and `datasets/insertion_container/` holding 40 folders,
-`demo_0` to `demo_39`. In every new terminal, activate the environment again from the project folder:
-`conda activate ./miniconda_env`.
+For the other two, replace `insertion_container` (both times in the link, and in the file name) with
+`insertion_fixed_container_pose` or `insertion_container_with_obstacle`. Or get all three in one go:
+
+```bash
+for d in insertion_container insertion_fixed_container_pose insertion_container_with_obstacle; do
+  curl -LO https://github.com/GeoRob-Lab/dd2603-course/releases/download/$d-v1.0/$d.zip
+  unzip $d.zip -d datasets/ -x "__MACOSX/*" && rm $d.zip
+done
+```
+
+Then choose your dataset with `dataset:` at the top of `student/project.yaml` (by default `datasets/insertion_container`).
+Every script, and the simulator's scene, follows it.
+
+You should see the environment created without errors, and each dataset you downloaded in `datasets/`, e.g.
+`datasets/insertion_container/` holding 30 folders, `demo_0` to `demo_29`. In every new terminal, activate the
+environment again from the project folder: `conda activate ./miniconda_env`.
 
 ## The guide
 

@@ -41,7 +41,7 @@ training:
 
 # ---- Running, scoring and looking at it (steps 3, 6 and 7) -------------------------------------------
 run:                                              # scripts/run_policy.py
-  checkpoint: policies/pretrained/insertion_vision_mlp.pt  # yours: policies/{policy_name}/checkpoints/best.pt
+  checkpoint: policies/pretrained/insertion_container.pt  # yours: policies/{policy_name}/checkpoints/best.pt
   demo: 0                                         # start where this demo started (its number); the policy only knows starts like the demos'
   dataset: null                                   # the demo's dataset (null: the one the policy was trained on)
   speed: 0.7                                      # scales the policy's velocities

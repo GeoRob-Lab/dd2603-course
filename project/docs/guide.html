@@ -152,15 +152,22 @@
         <figure><img src="images/policy_end.jpg" alt="The rod inside the container"><figcaption><b>8 s</b> the rod in the container</figcaption></figure>
       </div>
       <p>The policy you just used is a small neural network trained on demonstrations of this task using conventional behavior cloning. The whole pipeline takes the cameras' images of the blue container in the robot's right arm, then constructs its point cloud, encodes it, and finally feeds it to the policy to determine how the left hand should move.</p>
+      <p>It was trained on one dataset only, <code>insertion_container</code> (step 3), so it only knows that task and its scene. Run it with <code>dataset: datasets/insertion_container</code> in <code>student/project.yaml</code> (the default), so that the simulator shows that scene. For the other two datasets there is no pretrained policy: the one you train is the first.</p>
     </section>
 
     <section id="demos">
       <h2><span class="n">3</span>Look at the demonstrations</h2>
-      <p class="goal">You have 40 demonstrations of the task (<code>datasets/insertion_container</code>, which you downloaded during the setup in the README), each with the container somewhere else: demos 0 to 29 for training and 30 to 39 for validation. The validation demos are made from other real demonstrations than the training ones, so they test your policy on motions it has not seen.</p>
-      <p>Visualizing the demos: To visualize the demos you can run this in a new terminal which will open up a page in your browser (this might take a couple of seconds). If the visualizer does not suit your needs you can of course visualize the datasets as you please.</p>
+      <p class="goal">There are three datasets, each a version of the insertion task with its own scene. You downloaded one or all of them during the setup in the README, and you choose which one you work on with <code>dataset:</code> at the top of <code>student/project.yaml</code>: training, running, evaluating and the simulator's scene all follow it.</p>
+      <table>
+        <tr><th>Dataset</th><th>Demos</th><th>The task</th></tr>
+        <tr><td><code>insertion_container</code></td><td>30</td><td>The right hand holds the container, somewhere else in each demo; the left hand brings the rod into it. Demos 0 to 23 are for training and 24 to 29 for validation (its <code>split.json</code>).</td></tr>
+        <tr><td><code>insertion_fixed_container_pose</code></td><td>15</td><td>The same task with the container always in the same place: only the motions differ.</td></tr>
+        <tr><td><code>insertion_container_with_obstacle</code></td><td>20</td><td>The container stands on the table and a small obstacle is in the way: the rod goes around it or over it.</td></tr>
+      </table>
+      <p>Visualizing the demos: to visualize the demos of a dataset, run this in a new terminal (with your dataset's name instead of <code>insertion_container</code>); it opens a page in your browser, which might take a couple of seconds. If the visualizer does not suit your needs you can of course visualize the datasets as you please.</p>
 <pre><code>python visualization/report.py datasets/insertion_container --open      <span class="c"># → reports/insertion_container.html</span></code></pre>
       <div class="see"><b>You should see</b> a list of the demos on the left. Click one to load it: the robot re-drawn in the simulator, what each camera saw, the container's point cloud with the rod, and the signals you pick, all at the same moment. You can use the slider at the bottom to play the full demo. On the left you will also see a few signals from the dataset that could be of interest. If you scroll down and press on them to show/hide their plots.</div>
-      <p>Replaying the demos in the simulator: with the simulator running the dataset's scene (step 1; another dataset's scene is in its <code>dataset_config.json</code>, e.g. <code>rby1-sim --scene scenes/insertion_tabletop_obstacle.xml</code>), this puts the objects where they were and moves the robot through each demo's recorded joints and grippers, so you can watch it happen.</p>
+      <p>Replaying the demos in the simulator: with the simulator running (step 1, which opens your dataset's scene), this puts the objects where they were and moves the robot through each demo's recorded joints and grippers, so you can watch it happen. It checks that the simulator runs the dataset's scene and tells you if not.</p>
 <pre><code>python scripts/replay_demo.py datasets/insertion_container --demos 3 7      <span class="c"># or --demos all; --speed 0.5 for half speed</span></code></pre>
       <p>Each demonstration is a folder with one file per signal (hand poses, joints, gripper, the container's point cloud) and a video per camera. <code>dataset_config.json</code> says what is in it.</p>
     </section>
