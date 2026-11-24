@@ -2,8 +2,8 @@
 An HTML report of datasets and logs (anything in the datasets' structure): open it in a browser and choose what to see.
 
     python visualization/report.py                                                 # student/project.yaml's report: settings
-    python visualization/report.py datasets/insertion_vision                       # -> reports/insertion_vision.html
-    python visualization/report.py datasets/insertion_vision logs/PolicyController # -> reports/insertion_vision+PolicyController.html
+    python visualization/report.py datasets/insertion_container                       # -> reports/insertion_container.html
+    python visualization/report.py datasets/insertion_container logs/PolicyController # -> reports/insertion_container+PolicyController.html
     python visualization/report.py logs/PolicyController --open                    # and open it in the browser
 
 The pages go in reports/ (or -o); each is one file, to open in any browser or send to anyone.
@@ -271,11 +271,11 @@ def read_folder(folder: Path, detail: int, replay: bool = True) -> dict:
         for e in episodes[:1]:
             meta = json.loads((e / "meta.json").read_text()) if (e / "meta.json").exists() else {}
             cameras = {name: c["T_base_cam"] for name, c in (meta.get("cameras") or {}).items()}
-    scene = config.get("scene") or scene_of_logs(episodes) or ("scenes/insertion_vision.xml" if cameras else None)
+    scene = config.get("scene") or scene_of_logs(episodes) or ("scenes/insertion_container.xml" if cameras else None)
     replayer = None
     if replay and detail and scene and (ROOT / scene).exists():
         replayer = REPLAYERS.get(scene) or REPLAYERS.setdefault(scene, Replayer(scene))
-    return {"name": {"PolicyController": "PolicyRollouts", "insertion_vision": "Demos - Insertion"}.get(folder.name, folder.name), "path": str(folder), "task": config.get("task", ""),
+    return {"name": {"PolicyController": "PolicyRollouts", "insertion_container": "Demos - Insertion"}.get(folder.name, folder.name), "path": str(folder), "task": config.get("task", ""),
             "table": table_of(scene), "cameras": {k: rounded(v, 3) for k, v in cameras.items()},
             "episodes": {e.name: read_episode(e, i < detail, replayer if i < detail else None) for i, e in enumerate(episodes)}}
 

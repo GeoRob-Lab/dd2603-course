@@ -13,6 +13,7 @@ itself under ``mjpython`` automatically, so the same command works everywhere.
 from __future__ import annotations
 
 import argparse
+import json
 import os
 import sys
 import threading
@@ -113,12 +114,13 @@ def run(model: str = DEFAULT_MODEL, scene: str | None = None, headless: bool = F
     Runs until the window is closed or Ctrl+C is pressed.
     """
     sim, robot_model, dynamics, urdf, gripper = make_simulation(model, scene)
+    gripper.scene = str(scene) if scene else None  # (the gripper server tells clients which scene runs)
     if pose:
         set_pose(sim, robot_model, pose)
     robot = SimRobot(sim, ControlManager(sim, robot_model, dynamics), robot_model, urdf)
     server = start_server(robot, port)  # keep a reference: the server stops when collected
     if gripper_port:
-        serve(gripper, gripper_port, robot.lock)
+        serve(gripper, gripper_port, robot.lock, robot.control)
     stop = threading.Event()
     publishing = bool(camera_port) and sim.model.ncam > 0
     if publishing:
@@ -151,13 +153,18 @@ def run(model: str = DEFAULT_MODEL, scene: str | None = None, headless: bool = F
 
 def main() -> None:
     config = robot_config()  # the [sim] section of configs/robot.toml gives the defaults
-    from rbylearn.project import project_section
-    project = project_section("simulator")  # and student/project.yaml's simulator: section the scene, the start pose, the window
+    from rbylearn.project import ROOT, load_project
+    settings = load_project()
+    project = settings.get("simulator") or {}  # and student/project.yaml's simulator: section the scene, the start pose, the window
+    if not project.get("scene"):  # the scene the dataset was recorded in (its dataset_config.json)
+        dataset_config = ROOT / settings.get("dataset", "") / "dataset_config.json"
+        if dataset_config.is_file():
+            project["scene"] = json.loads(dataset_config.read_text()).get("scene")
     parser = argparse.ArgumentParser(prog="rby1-sim", description="Start the RB-Y1 simulator (settings: student/project.yaml's simulator: section).")
     parser.add_argument("--model", default=config.sim_variant, choices=MODELS,
                         help=f"RB-Y1 variant (default from robot.toml: {config.sim_variant})")
     parser.add_argument("--scene", default=project.get("scene"),
-                        help=f"MJCF file with extra objects (and cameras) to add to the world (default from student/project.yaml: {project.get('scene')})")
+                        help=f"MJCF file with extra objects (and cameras) to add to the world (default: the scene of student/project.yaml's dataset, {project.get('scene')})")
     parser.add_argument("--port", type=int, default=config.sim_port,
                         help=f"port of the robot API (default from robot.toml: {config.sim_port})")
     parser.add_argument("--gripper-port", type=int, default=config.port("gripper"),

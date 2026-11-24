@@ -8,6 +8,9 @@ initial_pose: ready
 # Time (s) the move to the initial pose takes at least.
 initial_pose_time: 3.0
 
+# Pause (s) at the start pose before a rollout (or a demo's replay) starts.
+start_pause: 1.0
+
 # Named joint configurations, in degrees. Joints are ordered as in rby1-sdk:
 #   torso:     torso_0 .. torso_5 (bottom to top)
 #   right_arm: right_arm_0 .. right_arm_6 (shoulder to wrist)
@@ -19,7 +22,7 @@ poses:
     right_arm: [0.0, -5.0, 0.0, -120.0, 0.0, 40.0, 0.0]
     left_arm: [0.0, 5.0, 0.0, -120.0, 0.0, 40.0, 0.0]
 
-  # Insertion task (scenes/insertion_vision.xml, datasets/insertion_vision): the right hand holds the container
+  # Insertion task (scenes/insertion_container.xml, datasets/insertion_container): the right hand holds the container
   # still, its opening where the rod (left hand) ends in the demonstrations; the left arm as in "ready".
   # (The right arm's joints put the hand there on rby1a_1.0, our robot's version.)
   insertion:

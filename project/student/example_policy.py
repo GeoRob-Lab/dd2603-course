@@ -18,7 +18,7 @@ from torch import nn
 from rbylearn.learning.policies import feature_slices
 
 class ExamplePolicy(nn.Module):
-    def __init__(self, input_dim: int, output_dim: int, hidden=(256, 256), features=None):
+    def __init__(self, input_dim: int, output_dim: int, hidden=(256, 256), dropout: float = 0.0, embedding_noise: float = 0.0, features=None):
         """
         Description
         -----------
@@ -32,6 +32,11 @@ class ExamplePolicy(nn.Module):
             The size of the output vector y (chunk_size actions, each the output_features side by side).
         hidden : list of int
             The sizes of the hidden layers (policy: hidden: in student/project.yaml).
+        dropout : float
+            While training, the fraction of hidden units switched off at random (against overfitting).
+        embedding_noise : float
+            While training, the std of the random noise added to the (normalised) vision embeddings, so the
+            policy does not memorise the exact embedding of each demo.
         features : dict, optional
             Where each feature sits in x and y, e.g.
             {"inputs": {"left.ee.pose": [7], "container.embedding": [6]},  # [1027] with embedding_dim: null
@@ -39,11 +44,12 @@ class ExamplePolicy(nn.Module):
             feature_slices(features)["left.ee.pose"] is that feature's slice of x.
         """
         super().__init__()
-        self.slices = feature_slices(features) if features else {}  # not used by this MLP
+        self.slices = feature_slices(features) if features else {}
+        self.embedding_noise = embedding_noise
         sizes = [input_dim, *hidden]
         layers = []
         for a, b in zip(sizes[:-1], sizes[1:]):
-            layers += [nn.Linear(a, b), nn.ReLU()]
+            layers += [nn.Linear(a, b), nn.ReLU()] + ([nn.Dropout(dropout)] if dropout else [])
         self.net = nn.Sequential(*layers, nn.Linear(sizes[-1], output_dim))
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
@@ -67,6 +73,11 @@ class ExamplePolicy(nn.Module):
         torch.Tensor
             The loss, a scalar.
         """
+        if self.training and self.embedding_noise:  # training only: jitter the vision embeddings
+            x = x.clone()
+            for name, s in self.slices.items():
+                if name.endswith(".embedding"):
+                    x[:, s] += self.embedding_noise * torch.randn_like(x[:, s])
         return nn.functional.mse_loss(self(x), y)
 
     @torch.no_grad()

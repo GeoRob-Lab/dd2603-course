@@ -45,12 +45,12 @@ The last command downloads the robot's model files (about 250 MB), once.
 Last, get the demonstrations (about 400 MB) from the course's GitHub release and unzip them into `datasets/`:
 
 ```bash
-curl -LO https://github.com/GeoRob-Lab/dd2603-course/releases/download/project-v1.0/insertion_vision.zip
-unzip insertion_vision.zip -d datasets/
-rm insertion_vision.zip
+curl -LO https://github.com/GeoRob-Lab/dd2603-course/releases/download/project-v1.0/insertion_container.zip
+unzip insertion_container.zip -d datasets/
+rm insertion_container.zip
 ```
 
-You should see the environment created without errors, and `datasets/insertion_vision/` holding 40 folders,
+You should see the environment created without errors, and `datasets/insertion_container/` holding 40 folders,
 `demo_0` to `demo_39`. In every new terminal, activate the environment again from the project folder:
 `conda activate ./miniconda_env`.
 

@@ -1,5 +1,5 @@
 # The container's look: a tube closed at the bottom (z = -0.09), open at the top (z = +0.09), walls 6.5 mm thick.
-# Visual only (scenes/insertion_vision.xml); the point clouds' mesh fit uses container.obj.
+# Visual only (scenes/insertion_container.xml); the point clouds' mesh fit uses container.obj.
 v 0.035000 0.000000 -0.090000
 v 0.034831 0.003431 -0.090000
 v 0.034327 0.006828 -0.090000

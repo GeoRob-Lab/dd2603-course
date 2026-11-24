@@ -18,7 +18,6 @@ import numpy as np
 
 Episode = dict[str, np.ndarray]
 
-
 def load_dataset(path: str | Path, features: list[str] | None = None) -> list[Episode]:
     """Load a dataset recorded with our demonstration tool.
 
@@ -62,12 +61,10 @@ def load_dataset(path: str | Path, features: list[str] | None = None) -> list[Ep
         episodes.append(episode)
     return episodes
 
-
 def episode_folders(path: str | Path) -> list[Path]:
     """The ``demo_<i>`` (or, in logs, ``run_<i>``) folders of a dataset, in order."""
     folders = [d for d in Path(path).iterdir() if d.is_dir() and d.name.split("_")[0] in ("demo", "run") and d.name.split("_")[-1].isdigit()]
     return sorted(folders, key=lambda d: (d.name.split("_")[0], int(d.name.split("_")[-1])))
-
 
 def load_images(path: str | Path, episode: int, camera: str, every: int = 1) -> dict[str, np.ndarray]:
     """One camera's images in one demo (or run): ``colour`` (T, H, W, 3) uint8 with ``colour.timestamps``

@@ -137,7 +137,7 @@
       <h2><span class="n">1</span>Start the simulator</h2>
       <p class="goal">First follow the setup in <code>README.md</code>, so that you have the environment and the demonstrations. Then start the robot simulation in its own terminal, with the environment activated (<code>conda activate ./miniconda_env</code>), and leave it running.</p>
 <pre><code>rby1-sim</code></pre>
-      <p>It takes its scene and the robot's start pose from <code>simulator:</code> in <code>configs/defaults.yaml</code>.</p>
+      <p>It opens the scene of your dataset (<code>dataset:</code> in <code>student/project.yaml</code>), and takes the robot's start pose from <code>simulator:</code> in <code>configs/defaults.yaml</code>.</p>
       <div class="see"><b>You should see</b> a window with the robot at a table, a red rod in its left hand and a blue container in its right, its arms raised above the table in its <code>ready</code> pose. Close the window or press Ctrl+C to stop it.</div>
     </section>
 
@@ -156,10 +156,12 @@
 
     <section id="demos">
       <h2><span class="n">3</span>Look at the demonstrations</h2>
-      <p class="goal">You have 40 demonstrations of the task (<code>datasets/insertion_vision</code>, which you downloaded during the setup in the README), each with the container somewhere else: demos 0 to 29 for training and 30 to 39 for validation. The validation demos are made from other real demonstrations than the training ones, so they test your policy on motions it has not seen.</p>
+      <p class="goal">You have 40 demonstrations of the task (<code>datasets/insertion_container</code>, which you downloaded during the setup in the README), each with the container somewhere else: demos 0 to 29 for training and 30 to 39 for validation. The validation demos are made from other real demonstrations than the training ones, so they test your policy on motions it has not seen.</p>
       <p>Visualizing the demos: To visualize the demos you can run this in a new terminal which will open up a page in your browser (this might take a couple of seconds). If the visualizer does not suit your needs you can of course visualize the datasets as you please.</p>
-<pre><code>python visualization/report.py datasets/insertion_vision --open      <span class="c"># → reports/insertion_vision.html</span></code></pre>
+<pre><code>python visualization/report.py datasets/insertion_container --open      <span class="c"># → reports/insertion_container.html</span></code></pre>
       <div class="see"><b>You should see</b> a list of the demos on the left. Click one to load it: the robot re-drawn in the simulator, what each camera saw, the container's point cloud with the rod, and the signals you pick, all at the same moment. You can use the slider at the bottom to play the full demo. On the left you will also see a few signals from the dataset that could be of interest. If you scroll down and press on them to show/hide their plots.</div>
+      <p>Replaying the demos in the simulator: with the simulator running the dataset's scene (step 1; another dataset's scene is in its <code>dataset_config.json</code>, e.g. <code>rby1-sim --scene scenes/insertion_tabletop_obstacle.xml</code>), this puts the objects where they were and moves the robot through each demo's recorded joints and grippers, so you can watch it happen.</p>
+<pre><code>python scripts/replay_demo.py datasets/insertion_container --demos 3 7      <span class="c"># or --demos all; --speed 0.5 for half speed</span></code></pre>
       <p>Each demonstration is a folder with one file per signal (hand poses, joints, gripper, the container's point cloud) and a video per camera. <code>dataset_config.json</code> says what is in it.</p>
     </section>
 
@@ -225,13 +227,19 @@ q = x[..., s["left.ee.pose"]][..., 3:7]      <span class="c"># the hand's unit q
         <tr><td><code>camera_centre.image</code></td><td class="shape">(3, 96, 128)</td><td>The centre camera's raw colour image: 3 channels (RGB) of 96 × 128 pixels, values 0 to 255, not scaled. The camera runs at 10 Hz, so the policy gets its latest image</td></tr>
         <tr><td><code>left.gripper.closing</code></td><td class="shape">(1,)</td><td>How closed the left gripper is: 0 is fully open, 1 is fully closed (holding the rod, it is about 0.7)</td></tr>
         <tr><td><code>left.arm.joints.position</code></td><td class="shape">(7,)</td><td>The left arm's 7 joint angles (rad)</td></tr>
+        <tr><td><code>right.ee.pose</code></td><td class="shape">(7,)</td><td>The right hand's pose (the hand holding the container), as <code>left.ee.pose</code>: position scaled to [-1, 1], unit quaternion with qw ≥ 0. Its position is always in the robot's base frame</td></tr>
+        <tr><td><code>right.gripper.closing</code></td><td class="shape">(1,)</td><td>How closed the right gripper is, as <code>left.gripper.closing</code></td></tr>
+        <tr><td><code>right.arm.joints.position</code></td><td class="shape">(7,)</td><td>The right arm's 7 joint angles (rad)</td></tr>
       </table>
-      <p><b>Outputs</b> in <code>policy: output_features:</code> (the robot moves the left hand to follow them, within the safety limits):</p>
+      <p><b>Outputs</b> in <code>policy: output_features:</code> (the robot moves the hands to follow them, within the safety limits; a hand without commands holds still). The left and right hands have the same commands, for one hand or both:</p>
       <table class="features">
         <tr><th>Feature</th><th>Shape</th><th>Description</th></tr>
         <tr><td><code>left.commands.arm.ee.velocity</code></td><td class="shape">(6,)</td><td>The hand's velocity: linear (vx, vy, vz) and angular (ωx, ωy, ωz), base frame, each scaled by its largest value in the demos. The angular velocity is a tangent vector of the rotations: the hand turns by exp(ω dt) each step</td></tr>
         <tr><td><code>left.commands.arm.ee.pose</code></td><td class="shape">(7,)</td><td>The hand's next pose, position and unit quaternion, base frame, as it is (not scaled)</td></tr>
         <tr><td><code>left.commands.gripper</code></td><td class="shape">(1,)</td><td>How closed the left gripper should be: 0 fully open, 1 fully closed. The demos open it at the end to drop the rod into the container</td></tr>
+        <tr><td><code>right.commands.arm.ee.velocity</code></td><td class="shape">(6,)</td><td>The right hand's velocity, as <code>left.commands.arm.ee.velocity</code></td></tr>
+        <tr><td><code>right.commands.arm.ee.pose</code></td><td class="shape">(7,)</td><td>The right hand's next pose, as <code>left.commands.arm.ee.pose</code></td></tr>
+        <tr><td><code>right.commands.gripper</code></td><td class="shape">(1,)</td><td>How closed the right gripper should be, as <code>left.commands.gripper</code></td></tr>
       </table>
       <p><b>Timing.</b> <code>dt</code> is the time between two actions (0.05 s). With <code>chunk_size: n</code> your policy predicts n actions at once; the robot runs the first <code>execute_steps</code> of them, then asks again. Everything else about the data (the time step, the point-cloud encoder, the scaling, the noisy copies for training) is in <code>configs/defaults.yaml</code>'s <code>preprocessing:</code>. It is the same for everyone, so policies stay comparable.</p>
     </section>

@@ -1,11 +1,3 @@
-"""Processing steps available in preprocessing configs (``type: <name>``).
-
-Pose features are ``[x, y, z, qw, qx, qy, qz]`` (position in metres, unit quaternion).
-``remove_pauses``, ``arclength_resample`` and ``relative_to_goal``, and the ``minmax`` and
-``maxabs`` normalizations, are ports of the preprocessing used for the RB-Y1 insertion demos in
-the manifolds code (``manifolds/training/dataset.py``, ``manifolds/utils/trajectory_preprocessing.py``).
-"""
-
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -21,7 +13,6 @@ TS = ".timestamps"  # suffix of a feature's timestamps (seconds) in a frame
 def _time_series(frame: dict, features: list[str] | None) -> list[str]:
     """The features to process: the given ones, or every feature that has timestamps."""
     return features if features else [k[: -len(TS)] for k in frame if k.endswith(TS)]
-
 
 @register_step("crop")
 @dataclass
@@ -39,7 +30,6 @@ class Crop(ProcessStep):
                 if key in frame:
                     frame[key] = frame[key][self.start:self.end]
         return frame
-
 
 @register_step("resample")
 @dataclass
@@ -75,24 +65,23 @@ class Resample(ProcessStep):
             frame[f], frame[f + TS] = out, grid
         return frame
 
-
 @register_step("quaternion_sign")
 @dataclass
 class QuaternionSign(ProcessStep):
     """Flip quaternions of pose features to ``qw >= 0`` (q and -q are the same rotation), so the
-    policy never sees two encodings of one orientation. Runs on training data and observations."""
+    policy never sees two encodings of one orientation. Runs on training data and observations.
+    Features a dataset doesn't have (e.g. ``right.ee.pose`` in a dataset of the left hand only) are skipped."""
 
     features: list[str] = field(default_factory=list)
     hooks: list[str] = field(default_factory=lambda: ["dataset", "observation"])
 
     def forward(self, frame):
         frame = dict(frame)
-        for f in self.features:
+        for f in [f for f in self.features if f in frame]:
             x = frame[f].copy()
             x[:, 3:7] *= np.where(x[:, 3:4] < 0, -1.0, 1.0)
             frame[f] = x
         return frame
-
 
 @register_step("pose_to_velocity")
 @dataclass
@@ -100,13 +89,16 @@ class PoseToVelocity(ProcessStep):
     """Add an action feature: the end-effector velocity ``[vx, vy, vz, wx, wy, wz]`` (base frame)
     that moves each pose to the next one. The last step gets zero velocity.
 
-    Useful for datasets that record poses but no commands (e.g. the insertion dataset).
+    Useful for datasets that record poses but no commands (e.g. the insertion dataset). Does nothing
+    for a dataset without the pose (e.g. ``right.ee.pose`` in a dataset of the left hand only).
     """
 
     pose_feature: str = "right.ee.pose"
     output_feature: str = "right.commands.arm.ee.velocity"
 
     def forward(self, frame):
+        if self.pose_feature not in frame:
+            return frame
         frame = dict(frame)
         x, t = frame[self.pose_feature], frame[self.pose_feature + TS]
         velocity = np.zeros((len(x), 6))
@@ -116,7 +108,6 @@ class PoseToVelocity(ProcessStep):
             velocity[k, 3:] = so3_log(quat_to_matrix(x[k + 1, 3:7]) @ quat_to_matrix(x[k, 3:7]).T) / dt
         frame[self.output_feature], frame[self.output_feature + TS] = velocity, t
         return frame
-
 
 @register_step("corrective_noise")
 @dataclass
@@ -167,7 +158,6 @@ class CorrectiveNoise(ProcessStep):
             frame[f + TS] = np.tile(t, self.copies + 1)
         return frame
 
-
 @register_step("normalize")
 @dataclass
 class Normalize(ProcessStep):
@@ -183,7 +173,7 @@ class Normalize(ProcessStep):
     ``dims`` restricts it to some components, e.g. ``[0, 1, 2]`` for the position of a pose.
     With ``clip``, policy outputs (action hook) are first clipped to the range of the training
     data ([-1, 1] for ``minmax`` and ``maxabs``), e.g. so a policy never commands a velocity
-    faster than the demonstrations.
+    faster than the demonstrations. Features the training data doesn't have are skipped.
     """
 
     features: list[str] = field(default_factory=list)
@@ -199,7 +189,7 @@ class Normalize(ProcessStep):
         self.scale: dict[str, np.ndarray] = {}
 
     def fit(self, episodes):
-        for f in self.features:
+        for f in [f for f in self.features if episodes and f in episodes[0]]:
             x = np.concatenate([e[f] for e in episodes])
             dims = self.dims if self.dims is not None else list(range(x.shape[1]))
             offset, scale = np.zeros(x.shape[1]), np.ones(x.shape[1])
@@ -228,7 +218,6 @@ class Normalize(ProcessStep):
     def load_state(self, state):
         self.offset = {k: np.asarray(v) for k, v in state.get("offset", {}).items()}
         self.scale = {k: np.asarray(v) for k, v in state.get("scale", {}).items()}
-
 
 @register_step("remove_pauses")
 @dataclass
@@ -264,7 +253,6 @@ class RemovePauses(ProcessStep):
                 frame[key] = frame[key][keep]
         return frame
 
-
 @register_step("arclength_resample")
 @dataclass
 class ArclengthResample(ProcessStep):
@@ -288,7 +276,6 @@ class ArclengthResample(ProcessStep):
         out[:, 3:7] = [quat_slerp(x[i, 3:7], x[i + 1, 3:7], ui) for i, ui in zip(k, u)]
         frame[self.feature], frame[self.feature + TS] = out, np.interp(s_new, s, t)
         return frame
-
 
 @register_step("relative_to_goal")
 @dataclass
